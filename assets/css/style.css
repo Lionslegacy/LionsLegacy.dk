@@ -195,7 +195,7 @@ a[href^="tel:"] { white-space: nowrap; }
   white-space: nowrap;
 }
 .brand:hover { color: var(--pergament); }
-.brand svg { width: 38px; height: 38px; flex: none; }
+.brand img { width: 44px; height: 44px; flex: none; }
 
 .nav ul {
   display: flex;
@@ -426,7 +426,7 @@ a[href^="tel:"] { white-space: nowrap; }
   gap: clamp(1.25rem, 3vw, 2.5rem);
   align-items: start;
 }
-.udsagn svg { width: clamp(56px, 7vw, 84px); height: auto; margin-top: 0.4rem; }
+.udsagn img { width: clamp(64px, 8vw, 96px); height: auto; margin-top: 0.4rem; }
 .udsagn figure,
 .udsagn blockquote { margin: 0; }
 .udsagn blockquote p {
@@ -467,7 +467,7 @@ a[href^="tel:"] { white-space: nowrap; }
   overflow: hidden;
 }
 .produkt__billede img { width: 100%; height: 100%; object-fit: cover; }
-.produkt__billede .pladsholder-maerke { width: 34%; opacity: 0.32; }
+.produkt__billede .pladsholder-maerke { width: 38%; height: auto; opacity: 0.32; }
 .produkt__billede figcaption {
   position: absolute;
   bottom: 0.9rem;
@@ -659,7 +659,7 @@ a[href^="tel:"] { white-space: nowrap; }
   border-bottom: 1px solid var(--linje-svag);
 }
 .fod .brand { font-size: 1.5rem; margin-bottom: 1rem; }
-.fod .brand svg { width: 46px; height: 46px; }
+.fod .brand img { width: 56px; height: 56px; }
 .fod__om { color: var(--sten); max-width: 30ch; margin: 0; }
 .fod h2 {
   font-family: var(--sans);
@@ -694,7 +694,7 @@ a[href^="tel:"] { white-space: nowrap; }
   text-align: center;
   padding-block: 4rem;
 }
-.fejlside svg { width: 96px; margin: 0 auto 2rem; }
+.fejlside img { width: 120px; height: auto; margin: 0 auto 2rem; }
 .fejlside p { margin-inline: auto; }
 .fejlside .knapper { justify-content: center; margin-top: 2rem; }
 
