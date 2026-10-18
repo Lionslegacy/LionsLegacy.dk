@@ -128,4 +128,4 @@ Alle farver ligger øverst i `assets/css/style.css`:
 
 Skrifttyper: Bodoni Moda (overskrifter) og Jost (brødtekst), begge under SIL Open Font License (se `assets/fonts`).
 
-Logoet er `assets/img/maerke.svg`. Har du et eget logo, kan det erstatte mærket i sidernes header og footer.
+Logoet er `assets/img/maerke.svg`: løven med to L’er (Lion og Legacy) i en dobbelt guldring. Alle sider henter det fra den ene fil (menu, footer, citatet på forsiden, produktpladsholdere og fejlsiden), så erstatter du filen, skifter logoet overalt. Fanebladsikonet er `favicon.svg` og `favicon-32.png` (LL-seglet), og ikonet til telefonens hjemmeskærm er `apple-touch-icon.png`.
