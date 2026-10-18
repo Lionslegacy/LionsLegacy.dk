@@ -34,7 +34,7 @@ Header (menu) og footer er **kopieret ind i hver HTML-fil**. Ændrer du menu, ko
 - Stilen er mørk og eksklusiv: hårfine guldlinjer, skarpe hjørner (radius 0–2px), ingen skygger, ingen afrundede "kort", ingen versaler-etiketter, ingen emojis.
 - Den eneste automatiske animation er manken i hero. Tilføj ikke flere indgangsanimationer.
 - Brug de eksisterende klasser (`.sektion`, `.ramme`, `.knap--guld`, `.knap--linje`, `.produkter`, `.trin`, `.ydelser` osv.) før du skriver ny CSS.
-- Logoet er `assets/img/maerke.svg` (løve med to L’er i dobbelt guldring). Indsæt det som `<img src="assets/img/maerke.svg" alt="">`, ikke som indlejret SVG. Fanebladsikonet er LL-seglet i `favicon.svg`.
+- Logoet er `assets/img/maerke.svg` (løve med to L’er, uden ring). Indsæt det som `<img src="assets/img/maerke.svg" alt="">`, ikke som indlejret SVG. Fanebladsikonet er LL-seglet i `favicon.svg`.
 - Brandnavnet skrives **Lion’s Legacy** med typografisk apostrof (’).
 - Al synlig tekst er på dansk, i aktiv form og uden fyldord. Knapper siger, hvad der sker ("Send besked", "Se produkterne").
 
