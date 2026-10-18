@@ -1,0 +1,9 @@
+{
+  "name": "lionslegacy-kvalitetstjek",
+  "private": true,
+  "description": "Værktøjer til det automatiske kvalitetstjek af lionslegacy.dk",
+  "devDependencies": {
+    "axe-core": "4.14.0",
+    "html-validate": "9.7.1"
+  }
+}
