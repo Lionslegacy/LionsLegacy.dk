@@ -53,7 +53,9 @@ Hvert produkt er en `<li class="produkt">…</li>`-blok i `produkter.html` (de t
 
 ## Pladsholdere, der venter på rigtige oplysninger
 
-`[Dit navn]`, `[Adresse]`, `[Postnr. og by]`, `[CVR-nummer]`, `[Årstal]`, `[By]`, telefon `+45 00 00 00 00` / `tel:+4500000000`, mail `kontakt@lionslegacy.dk` (også i formularens `data-modtager` i `kontakt.html`), produktnavnene `Produktnavn et` … `seks`, `Pris følger` og `Billede følger`. Når ejeren giver de rigtige oplysninger, erstat dem i alle filer.
+Virksomhedsoplysninger (udfyldt): Axel Nyegaard Lambertsen, Spongparken 22, 8362 Hørning, CVR 46851803, telefon +45 30 46 32 50 / `tel:+4530463250`, mail `kontakt@lionslegacy.dk`, stiftet 2026, hjemby Aarhus. Adressen skifter til Aarhus, når ejeren flytter. Ret den så i footeren på alle syv HTML-filer, i `kontakt.html` og i `privatliv.html`.
+
+Mangler stadig: produktnavnene `Produktnavn et` … `seks`, `Pris følger` og `Billede følger`. Når ejeren giver de rigtige oplysninger, erstat dem i alle filer.
 
 ## Dansk lovtjek
 

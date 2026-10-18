@@ -83,12 +83,6 @@ Det nemmeste er GitHubs egen editor: Åbn repository’et og tryk på tasten **.
 
 | Søg efter | Erstat med | Findes i |
 |---|---|---|
-| `kontakt@lionslegacy.dk` | Din rigtige firma-mail | Alle sider (også kontaktformularens modtager) |
-| `+45 00 00 00 00` og `+4500000000` | Dit telefonnummer (det andet uden mellemrum) | Alle sider |
-| `[CVR-nummer]` | Dit CVR-nummer | Alle sider |
-| `[Adresse]` og `[Postnr. og by]` | Firmaadresse | Alle sider |
-| `[Dit navn]` | Dit navn | Forside og Om os |
-| `[Årstal]` og `[By]` | Stiftelsesår og by | Om os |
 | `Produktnavn et` … `Produktnavn seks` | Rigtige produktnavne | Forside og Produkter |
 | `Kort beskrivelse: materiale …` | Produktbeskrivelser | Forside og Produkter |
 | `Pris følger` | Pris, fx `1.495 kr.` | Forside og Produkter |
