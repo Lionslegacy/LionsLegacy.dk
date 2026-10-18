@@ -112,6 +112,18 @@ Formularen åbner den besøgendes mailprogram med beskeden udfyldt, så der kræ
 
 `privatliv.html` er et udgangspunkt, der passer til siden, som den er nu (ingen cookies, ingen sporing). Tilføjer du webshop, statistik eller nyhedsbrev, skal den opdateres. Få den gerne gennemlæst af en rådgiver; den er ikke juridisk rådgivning.
 
+## 9. Ændringer med Claude Code og automatisk kvalitetstjek
+
+Ændringer bestilles i chat på claude.ai/code (eller Code-fanen i Claude-appen) med repository'et `Lionslegacy/LionsLegacy.dk`. Claude følger reglerne i `CLAUDE.md` og laver en pull request.
+
+Ved hver pull request kører **Kvalitetstjek** automatisk på GitHub. Det tjekker døde links, HTML-fejl, mobil-layout, tilgængelighed og de vigtigste danske lovkrav (virksomhedsoplysninger, privatlivspolitik, ingen cookies eller tredjepart uden samtykke).
+
+- **Grønt flueben:** klar til Merge.
+- **Rødt kryds:** tryk **Details** for at se fejlene, og skriv "ret fejlene i kvalitetstjekket" til Claude.
+- **Gule advarsler** (fx pladsholdere, der ikke er udfyldt) stopper ikke noget, men bør ordnes før lancering.
+
+Tjekket er en hjælp, ikke juridisk rådgivning.
+
 ## Farver og skrift
 
 Alle farver ligger øverst i `assets/css/style.css`:

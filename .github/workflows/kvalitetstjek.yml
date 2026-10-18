@@ -1,0 +1,54 @@
+# Automatisk kvalitetstjek af lionslegacy.dk
+# Kører ved hver pull request og hver ændring på main.
+# Grønt flueben = klar til Merge. Rødt kryds = åbn "Details" og bed Claude om at rette fejlene.
+name: Kvalitetstjek
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kvalitetstjek-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tjek:
+    name: Tjek hjemmesiden
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Hent koden
+        uses: actions/checkout@v7
+
+      - name: Klargør Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Klargør Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Installer værktøjer
+        run: |
+          npm ci --prefix .github/kvalitetstjek
+          python -m pip install --quiet "playwright==1.56.0"
+          python -m playwright install --with-deps chromium
+
+      - name: Regler, links og lovkrav
+        if: ${{ !cancelled() }}
+        run: python .github/kvalitetstjek/regler.py
+
+      - name: HTML-fejl
+        if: ${{ !cancelled() }}
+        run: .github/kvalitetstjek/node_modules/.bin/html-validate --config .github/kvalitetstjek/htmlvalidate.json *.html
+
+      - name: Mobil, desktop og tilgængelighed
+        if: ${{ !cancelled() }}
+        run: python .github/kvalitetstjek/browser.py
