@@ -1,0 +1,3 @@
+Læg produktbilleder i denne mappe (fx kollektion-1.jpg).
+Brug gerne billeder i højformat (4:5), ca. 1200 x 1500 pixels, og under 400 KB hver.
+Se README.md for, hvordan billedet sættes ind på siden.
