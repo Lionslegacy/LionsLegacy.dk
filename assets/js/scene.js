@@ -290,7 +290,7 @@
   var m = { x: svaevX(tid), y: svaevY(tid) };
   var cur = { cx: 0, cy: 0, sc: 1, dim: 1, flow: 1, spin: 0 };
   var forste = true;
-  var holdTil = 0;
+  var holdTil = 0, glidTil = 0;
 
   // Den langsomme svæven, markøren følger, når musen står stille
   function svaevX(t) { return Math.sin(t * 0.23) * 0.55 + Math.sin(t * 0.11 + 1.3) * 0.2; }
@@ -351,7 +351,8 @@
   function opdater(dt) {
     var mal = maal(forside, window.scrollY);
     // Efter et sideskift står skulpturen et øjeblik, hvor den stod, og glider så på plads
-    var a = forste ? 1 : (tid < holdTil ? 0 : 1 - Math.exp(-dt * 3.2));
+    // (lidt hurtigere lige efter skiftet, så den er på plads, når indholdet er)
+    var a = forste ? 1 : (tid < holdTil ? 0 : 1 - Math.exp(-dt * (tid < glidTil ? 5.5 : 3.2)));
     forste = false;
     cur.cx += (mal.cx + m.x * 0.06 * mal.halvH - cur.cx) * a;
     cur.cy += (mal.cy + m.y * 0.05 * mal.halvH - cur.cy) * a;
@@ -543,7 +544,8 @@
     cur.cy = start0.cy + m.y * 0.05 * start0.halvH;
     cur.sc = start0.sc; cur.dim = start0.dim; cur.flow = start0.flow;
     forste = false;
-    holdTil = tid + 0.35;
+    holdTil = tid + 0.2;
+    glidTil = tid + 1.4;
   } else {
     forste = true;
   }
