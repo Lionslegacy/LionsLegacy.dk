@@ -12,29 +12,35 @@ Dette repository er hjemmesiden **lionslegacy.dk** for virksomheden Lion’s Leg
 
 | Fil | Indhold |
 |---|---|
-| `index.html` | Forside med hero ("manken"), to veje, udsagn, udvalgte produkter |
+| `index.html` | Forside med hero (stor 3D-skulptur), to veje, udsagn, udvalgte produkter |
 | `produkter.html` | Produktgitter og "Sådan bestiller du" |
 | `studie.html` | Kreativt studie: ydelser og arbejdsgang |
 | `om-os.html` | Historie, værdier, fakta |
 | `kontakt.html` | Kontaktformular (åbner mailprogram via `mailto:`) og kontaktoplysninger |
 | `privatliv.html` | Privatlivspolitik |
 | `404.html` | Fejlside. Bruger **absolutte** stier (`/assets/...`, `/kontakt.html`) |
-| `assets/css/style.css` | Al styling. Farver og skrift som variabler i `:root` |
-| `assets/js/main.js` | Mobilmenu, årstal, formularvalidering og `?produkt=`-udfyldning |
+| `assets/css/style.css` | Al styling. Farver, gradienter og skrift som variabler i `:root` |
+| `assets/js/main.js` | Mobilmenu, årstal, header ved scroll, lys på kort, indhold der glider frem, formularvalidering og `?produkt=`-udfyldning |
+| `assets/js/scene.js` | 3D-baggrunden (WebGL uden biblioteker): flydende guld, gnister og lysstrømme, der følger musen. Opretter også pauseknappen |
 | `assets/fonts/` | Selvhostede skrifttyper (Bodoni Moda, Jost) |
-| `assets/img/` | Logo (`maerke.svg`), favicon, delingsbillede, `produkter/` til produktbilleder |
+| `assets/img/` | Logo (`maerke.svg`), favicon, delingsbillede (`deling.jpg`), `produkter/` til produktbilleder |
 | `sitemap.xml`, `robots.txt` | Søgemaskiner. Tilføj nye sider til `sitemap.xml` |
 
-Header (menu) og footer er **kopieret ind i hver HTML-fil**. Ændrer du menu, kontaktoplysninger eller footer, så ret det i alle syv HTML-filer, også `404.html`.
+Header (menu) og footer er **kopieret ind i hver HTML-fil**. Ændrer du menu, kontaktoplysninger eller footer, så ret det i alle syv HTML-filer, også `404.html`. Alle sider indlæser `main.js` og `scene.js` nederst. `<body>` har `data-scene="forside"` på forsiden (stor skulptur i hero) og `data-scene="side"` på alle andre sider (mindre skulptur øverst til højre). Headerens `<div class="top__handling">` er der, hvor `scene.js` sætter pauseknappen ind.
 
 ## Designregler
 
-- Palet (brug kun disse via CSS-variablerne): antracit `--antracit #1c1d20`, `--dyb #141517`, `--flade #24262a`, messingguld `--guld #c6a15b`, `--guld-lys #e3c98f`, pergament `--pergament #ece5d8`, sten `--sten #a39e94`.
+Siden er et mørkt luksustema i guld og orange med en levende 3D-baggrund (inspireret af getlayers.ai, især skabelonen "Laocoon").
+
+- Palet (brug kun disse via CSS-variablerne): sort `--sort #0b0a09` (baggrund), `--dyb #110f0c`, `--flade #18140f`, guld `--guld #d6a85a`, `--guld-lys #f2d39a`, orange `--orange #ec7a2c`, kobber `--kobber #b4521a`, pergament `--pergament #f3ebdd` (tekst), sten `--sten #bcb1a0` (sekundær tekst).
+- Gradienter: `--gradient` (guldknapper), `--gradient-tekst` (fremhævede ord), `--gradient-kant` (hårfine kanter). Fremhæv ét eller to ord i en overskrift med `<em class="guldtekst">…</em>`, ikke hele afsnit.
 - Overskrifter: Bodoni Moda (`--serif`). Brødtekst: Jost (`--sans`). Tilføj ikke nye skrifttyper.
-- Stilen er mørk og eksklusiv: hårfine guldlinjer, skarpe hjørner (radius 0–2px), ingen skygger, ingen afrundede "kort", ingen versaler-etiketter, ingen emojis.
-- Den eneste automatiske animation er manken i hero. Tilføj ikke flere indgangsanimationer.
-- Brug de eksisterende klasser (`.sektion`, `.ramme`, `.knap--guld`, `.knap--linje`, `.produkter`, `.trin`, `.ydelser` osv.) før du skriver ny CSS.
-- Logoet er `assets/img/maerke.svg` (løve med to L’er, uden ring). Indsæt det som `<img src="assets/img/maerke.svg" alt="">`, ikke som indlejret SVG. Fanebladsikonet er LL-seglet i `favicon.svg`.
+- Flader er mørkt glas: `.glas` (halvgennemsigtig med sløret baggrund og runde hjørner, `--radius`), gerne med `.glas--kant` (guld/orange hårlinje) og `.lys` (blødt lys, der følger markøren). Knapper, menu og små etiketter (`.maerkat`) er piller. Ingen versaler-etiketter, ingen emojis.
+- Længere tekst skal stå på en `.glas`-flade, så den altid kan læses oven på 3D-baggrunden. `<body>` må ikke have en baggrund (så skjules 3D-baggrunden); baggrundsfarven ligger på `<html>`.
+- 3D-baggrunden i `scene.js` er sidens eneste animation, der kører af sig selv. Den skal blive ved med at: følge musen, stoppe når fanen er skjult, stå stille ved `prefers-reduced-motion`, sænke opløsningen eller stoppe på svage maskiner og have pauseknappen i menulinjen (kræves af WCAG 2.2.2). Den er skrevet i ren WebGL uden biblioteker. Hent ikke Three.js eller andet fra et CDN.
+- Indhold må glide blidt frem ved scroll med attributten `data-frem` (gøres kun, når bevægelse er tilladt). Tilføj ikke andre animationer.
+- Brug de eksisterende klasser (`.sektion`, `.ramme`, `.glas`, `.knap--guld`, `.knap--glas`, `.maerkat`, `.pillink`, `.produkter`, `.trin`, `.ydelser`, `.opfordring` osv.) før du skriver ny CSS.
+- Logoet er `assets/img/maerke.svg` (løve med to L’er, uden ring). Indsæt det som `<img src="assets/img/maerke.svg" alt="">`, ikke som indlejret SVG. Fanebladsikonet er LL-seglet i `favicon.svg`. Delingsbilledet til sociale medier er `deling.jpg` (1200 × 630).
 - Brandnavnet skrives **Lion’s Legacy** med typografisk apostrof (’).
 - Al synlig tekst er på dansk, i aktiv form og uden fyldord. Knapper siger, hvad der sker ("Send besked", "Se produkterne").
 
@@ -47,7 +53,7 @@ Header (menu) og footer er **kopieret ind i hver HTML-fil**. Ændrer du menu, ko
 
 Hvert produkt er en `<li class="produkt">…</li>`-blok i `produkter.html` (de tre første vises også på forsiden i `index.html`). Når et produkt tilføjes eller ændres:
 
-1. Kopier en eksisterende blok og ret navn, beskrivelse og pris (fx `1.495 kr.`).
+1. Kopier en eksisterende blok (`<li class="produkt glas glas--kant lys" data-frem>`) og ret navn, beskrivelse og pris (fx `1.495 kr.`).
 2. Billede: læg det i `assets/img/produkter/` (højformat 4:5, ca. 1200 × 1500 px, under 400 KB, websikkert filnavn uden æøå og mellemrum). Erstat pladsholderen i `<figure class="produkt__billede">` med `<img src="assets/img/produkter/filnavn.jpg" alt="Dansk beskrivelse" loading="lazy">`.
 3. Bestil-linket skal være `kontakt.html?produkt=` efterfulgt af produktnavnet URL-kodet.
 4. Hold forsiden og produktsiden i sync, hvis produktet er blandt de tre første.
@@ -102,6 +108,7 @@ Fejler tjekket på en pull request, så ret fejlene i samme pull request. Slå a
 - Kør kvalitetstjekket (se ovenfor) og ret alle fejl.
 - Tjek at siden ser rigtig ud på mobil (ca. 390 px bred) og desktop, uden vandret scroll.
 - Tjek at alle interne links virker, og at billeder har dansk `alt`-tekst.
-- Behold synlig tastaturfokus, labels på formularfelter og respekt for `prefers-reduced-motion`.
+- Behold synlig tastaturfokus, labels på formularfelter, respekt for `prefers-reduced-motion` og pauseknappen til 3D-baggrunden.
+- Tjek at tekst kan læses oven på 3D-baggrunden på både mobil og desktop.
 - Tilføjes en ny side: læg den i menuen i alle HTML-filer, i footeren og i `sitemap.xml`.
 - Gennemgå "Dansk lovtjek" for ændringer, der berører indhold, data eller salg.
