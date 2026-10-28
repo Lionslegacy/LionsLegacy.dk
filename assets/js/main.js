@@ -47,6 +47,9 @@
   // Indhold glider blidt frem, når det kommer ind i billedet.
   // Springes over for besøgende, der har slået bevægelse fra.
   var rolig = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Kom man hertil med et glidende sideskift (sideskift.js), står det synlige indhold
+  // stille fra start, så siden glider ind i én bevægelse uden at hoppe bagefter.
+  var viaSkift = document.documentElement.hasAttribute("data-fra");
   if (!rolig && "IntersectionObserver" in window) {
     var frem = document.querySelectorAll("[data-frem]");
     frem.forEach(function (el) {
@@ -62,11 +65,14 @@
     }, { rootMargin: "0px 0px -8% 0px", threshold: 0.08 });
     frem.forEach(function (el) {
       var r = el.getBoundingClientRect();
-      if (r.top < window.innerHeight && r.bottom > 0) return; // allerede synligt: vis med det samme
+      if (r.top < window.innerHeight && r.bottom > 0) { // allerede synligt
+        if (viaSkift) el.classList.add("er-fremme");
+        return;
+      }
       obs.observe(el);
     });
     document.documentElement.classList.add("js-frem");
-    frem.forEach(function (el) {
+    if (!viaSkift) frem.forEach(function (el) {
       var r = el.getBoundingClientRect();
       if (r.top < window.innerHeight && r.bottom > 0) el.classList.add("er-fremme");
     });

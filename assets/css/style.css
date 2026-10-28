@@ -484,16 +484,18 @@ a:hover > .pil { transform: translateX(3px) rotate(45deg); }
   padding-block: clamp(3rem, 8vh, 6rem) 2rem;
   overflow-x: clip;
 }
-.hero__indhold { position: relative; }
-.hero__indhold > * { position: relative; }
-.hero__indhold::before {
-  /* mørk lysning bag teksten, så den altid står skarpt mod guldet */
+.hero::before {
+  /* Mørk lysning bag teksten, så den altid står skarpt mod guldet.
+     Holder sig inden for heroen: noget, der stikker ud over kanten,
+     får Safari til at vise siden forskudt under sideskift. */
   content: "";
   position: absolute;
-  inset: -20% -10% -20% -30%;
-  background: radial-gradient(closest-side, rgba(11, 10, 9, 0.75), rgba(11, 10, 9, 0.35) 60%, transparent);
+  inset: 0;
+  background: radial-gradient(ellipse min(70vw, 896px) clamp(240px, calc(45svh - 34px), 390px) at calc(50% - min(10vw, 128px)) 46%,
+    rgba(11, 10, 9, 0.75), rgba(11, 10, 9, 0.35) 60%, transparent);
   pointer-events: none;
 }
+.hero__indhold { position: relative; }
 .hero__titel {
   font-size: clamp(3.6rem, 10.5vw, 10rem);
   font-weight: 450;
@@ -534,6 +536,10 @@ a:hover > .pil { transform: translateX(3px) rotate(45deg); }
     min-height: calc(100svh - var(--top-h));
     padding-top: 40svh;
     padding-bottom: 1.5rem;
+  }
+  .hero::before {
+    background: radial-gradient(ellipse 70% 32% at 40% 66%,
+      rgba(11, 10, 9, 0.75), rgba(11, 10, 9, 0.35) 60%, transparent);
   }
   .hero__titel { font-size: clamp(3.4rem, 19vw, 6rem); }
   .hero__fod { margin-top: 2.5rem; }
@@ -874,7 +880,7 @@ a:hover > .pil { transform: translateX(3px) rotate(45deg); }
   /* gylden lysstreg øverst */
   content: "";
   position: absolute;
-  top: -1px;
+  top: 0;
   left: 50%;
   width: min(720px, 80%);
   height: 1px;
@@ -980,13 +986,21 @@ a:hover > .pil { transform: translateX(3px) rotate(45deg); }
 .js-frem [data-frem].er-fremme { opacity: 1; transform: none; }
 
 /* ---------- Glidende sideskift (sideskift.js) ----------
-   Indholdet glider ud, og den nye side glider ind, mens menulinjen og
+   Indholdet glider i én rolig bevægelse: den gamle side glider ud og
+   tones væk, mens den nye glider ind fra samme side. Menulinjen og
    3D-baggrunden bliver stående. Kun når bevægelse er tilladt.
-   Den gamle side får klassen skift-ud, den nye skift-ind. */
+   Den gamle side får klassen skift-ud, den nye skift-ind.
+   Hold indholdet inden for sidens kanter (intet, der stikker ud til
+   venstre eller over main/footer), ellers viser Safari det forskudt. */
 @media (prefers-reduced-motion: no-preference) {
   @view-transition { navigation: auto; }
 }
-html { --skift-vej: 1; }
+html {
+  --skift-vej: 1;                         /* 1 = frem, -1 = tilbage */
+  --skift-x: clamp(32px, 5vw, 72px);      /* hvor langt indholdet glider */
+  --skift-tid: 0.62s;
+  --skift-kurve: cubic-bezier(0.45, 0, 0.2, 1);
+}
 html.skift--tilbage { --skift-vej: -1; }
 html.skift-ud .top,
 html.skift-ind .top { view-transition-name: top; }
@@ -994,27 +1008,33 @@ html.skift-ud main { view-transition-name: ud-indhold; }
 html.skift-ud .fod { view-transition-name: ud-fod; }
 html.skift-ind main { view-transition-name: ind-indhold; }
 html.skift-ind .fod { view-transition-name: ind-fod; }
-/* Baggrunden (resten af siden) skifter med en blød overtoning */
+/* Baggrunden og menulinjen tones blødt over */
 ::view-transition-group(root),
 ::view-transition-old(root),
-::view-transition-new(root) { animation-duration: 0.35s; }
+::view-transition-new(root) { animation-duration: 0.25s; }
 ::view-transition-group(top),
 ::view-transition-old(top),
-::view-transition-new(top) { animation-duration: 0.5s; }
+::view-transition-new(top) { animation-duration: 0.4s; }
 ::view-transition-old(ud-indhold),
 ::view-transition-old(ud-fod) {
-  animation: skift-ud 0.34s cubic-bezier(0.55, 0, 0.9, 0.5) both;
+  animation:
+    skift-glid-ud var(--skift-tid) var(--skift-kurve) both,
+    skift-tone-ud 0.26s ease-out both;
 }
 ::view-transition-new(ind-indhold),
 ::view-transition-new(ind-fod) {
-  animation: skift-ind 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+  animation:
+    skift-glid-ind var(--skift-tid) var(--skift-kurve) both,
+    skift-tone-ind 0.36s ease-out 0.14s both;
 }
-@keyframes skift-ud {
-  to { opacity: 0; transform: translateX(calc(var(--skift-vej) * clamp(-56px, -4vw, -24px))); filter: blur(6px); }
+@keyframes skift-glid-ud {
+  to { transform: translateX(calc(var(--skift-vej) * -1 * var(--skift-x))); }
 }
-@keyframes skift-ind {
-  from { opacity: 0; transform: translateX(calc(var(--skift-vej) * clamp(36px, 6vw, 88px))); filter: blur(6px); }
+@keyframes skift-glid-ind {
+  from { transform: translateX(calc(var(--skift-vej) * var(--skift-x))); }
 }
+@keyframes skift-tone-ud { to { opacity: 0; } }
+@keyframes skift-tone-ind { from { opacity: 0; } }
 
 /* Høj kontrast (Windows): vis gradienttekst som almindelig tekst */
 @media (forced-colors: active) {
