@@ -8,6 +8,7 @@
 
   var canvas = document.createElement("canvas");
   canvas.className = "scene";
+  canvas.id = "scene";
   canvas.setAttribute("aria-hidden", "true");
 
   var opts = { alpha: false, antialias: false, depth: false, stencil: false, powerPreference: "high-performance" };
@@ -279,15 +280,21 @@
   var KVAL_MIN = 0.45, KVAL_MAX = 1;
   var W = 0, H = 0;
 
-  var tid = rolig ? 14 : 0;
+  // Tiden følger uret, så skulpturen står samme sted, når man skifter side
+  var tid = rolig ? 14 : (PRECISION === "highp" ? (Date.now() / 1000) % 3600 : 0);
   var sidst = 0;
   var raf = 0;
 
   // Markøren: mål og blødt fulgt værdi. Uden mus svæver den af sig selv.
-  var mus = { x: 0, y: 0, aktiv: 0, sidst: -1e9 };
-  var m = { x: 0.25, y: 0.1 };
-  var cur = { cx: 0, cy: 0, sc: 1, dim: 1, flow: 1, spin: 0, gn: 1 };
+  var mus = { x: 0, y: 0, sidst: -1e9 };
+  var m = { x: svaevX(tid), y: svaevY(tid) };
+  var cur = { cx: 0, cy: 0, sc: 1, dim: 1, flow: 1, spin: 0 };
   var forste = true;
+  var holdTil = 0;
+
+  // Den langsomme svæven, markøren følger, når musen står stille
+  function svaevX(t) { return Math.sin(t * 0.23) * 0.55 + Math.sin(t * 0.11 + 1.3) * 0.2; }
+  function svaevY(t) { return Math.sin(t * 0.17 + 0.7) * 0.4; }
 
   function resize() {
     var w = Math.max(1, Math.round(window.innerWidth * dpr * kvalitet));
@@ -298,18 +305,18 @@
     }
   }
 
-  function maal() {
+  function maal(erForside, scroll) {
     // Hvor skulpturen skal stå, ud fra skærm, side og hvor langt man har scrollet
     var vw = window.innerWidth, vh = window.innerHeight;
     var aspect = vw / vh;
     var halvH = 6 * 0.5 / 2.2, halvB = halvH * aspect;
-    var s = Math.min(Math.max(window.scrollY / vh, 0), 3);
+    var s = Math.min(Math.max(scroll / vh, 0), 3);
     var k = Math.min(s, 1);
     var e = k * k * (3 - 2 * k);
     var bred = aspect >= 1.05;
     var r, cx, cy, dim, flow;
 
-    if (forside) {
+    if (erForside) {
       if (bred) {
         r = Math.min(0.74 * halvH, 0.42 * halvB);
         cx = halvB * 0.46; cy = -0.02;
@@ -342,8 +349,9 @@
   }
 
   function opdater(dt) {
-    var mal = maal();
-    var a = forste ? 1 : 1 - Math.exp(-dt * 3.2);
+    var mal = maal(forside, window.scrollY);
+    // Efter et sideskift står skulpturen et øjeblik, hvor den stod, og glider så på plads
+    var a = forste ? 1 : (tid < holdTil ? 0 : 1 - Math.exp(-dt * 3.2));
     forste = false;
     cur.cx += (mal.cx + m.x * 0.06 * mal.halvH - cur.cx) * a;
     cur.cy += (mal.cy + m.y * 0.05 * mal.halvH - cur.cy) * a;
@@ -353,9 +361,7 @@
 
     // Markør: brug den rigtige, ellers en langsom svæven
     var tomgang = rolig ? 0 : (tid - mus.sidst > 4 ? 1 : 0);
-    var fx = Math.sin(tid * 0.23) * 0.55 + Math.sin(tid * 0.11 + 1.3) * 0.2;
-    var fy = Math.sin(tid * 0.17 + 0.7) * 0.4;
-    var tx = tomgang ? fx : mus.x, ty = tomgang ? fy : mus.y;
+    var tx = tomgang ? svaevX(tid) : mus.x, ty = tomgang ? svaevY(tid) : mus.y;
     var b = 1 - Math.exp(-dt * (tomgang ? 0.8 : 4.5));
     m.x += (tx - m.x) * b;
     m.y += (ty - m.y) * b;
@@ -453,9 +459,12 @@
 
   function frame(nu) {
     raf = 0;
-    var dt = sidst ? Math.min((nu - sidst) / 1000, 0.1) : 1 / 60;
+    var raa = sidst ? Math.max((nu - sidst) / 1000, 0) : 1 / 60;
+    var dt = Math.min(raa, 0.1);
     sidst = nu;
-    if (koerer()) { tid += dt; tilpas(dt); }
+    // Tiden går som uret, så skulpturen står det samme sted på næste side.
+    // Efter en lang pause (fx en skjult fane) fortsætter den roligt i stedet for at springe.
+    if (koerer()) { tid += raa > 0.25 ? dt : raa; tilpas(dt); }
     tegn(opdater(dt));
     if (koerer()) raf = requestAnimationFrame(frame);
   }
@@ -469,10 +478,15 @@
 
   /* ---------- Hændelser ---------- */
 
-  window.addEventListener("pointermove", function (e) {
-    mus.x = e.clientX / window.innerWidth * 2 - 1;
-    mus.y = -(e.clientY / window.innerHeight * 2 - 1);
+  function peg(x, y) {
+    mus.x = x / window.innerWidth * 2 - 1;
+    mus.y = -(y / window.innerHeight * 2 - 1);
     mus.sidst = tid;
+  }
+  window.addEventListener("pointermove", function (e) { peg(e.clientX, e.clientY); }, { passive: true });
+  // Efter et sideskift ved browseren, hvor musen står, før den flyttes
+  window.addEventListener("pointerover", function (e) {
+    if (e.pointerType !== "touch") peg(e.clientX, e.clientY);
   }, { passive: true });
 
   window.addEventListener("resize", function () { if (!koerer()) { forste = true; tegnEnGang(); } }, { passive: true });
@@ -517,6 +531,22 @@
   if (plads) plads.insertBefore(knap, plads.firstChild);
   else { knap.classList.add("scene-knap--fast"); document.body.appendChild(knap); }
 
-  forste = true;
-  start();
+  // Kom man fra en anden side, starter skulpturen, hvor den stod dér
+  var fra = document.documentElement.getAttribute("data-fra");
+  if (fra && !rolig) {
+    // Musen står sandsynligvis på det menupunkt, der blev klikket på
+    var punkt = document.querySelector('.nav [aria-current="page"]') || (forside && document.querySelector(".brand"));
+    var r = punkt && window.matchMedia("(hover: hover) and (pointer: fine)").matches ? punkt.getBoundingClientRect() : null;
+    if (r && r.width) { peg(r.left + r.width / 2, r.top + r.height / 2); m.x = mus.x; m.y = mus.y; }
+    var start0 = maal(fra === "forside", 0);
+    cur.cx = start0.cx + m.x * 0.06 * start0.halvH;
+    cur.cy = start0.cy + m.y * 0.05 * start0.halvH;
+    cur.sc = start0.sc; cur.dim = start0.dim; cur.flow = start0.flow;
+    forste = false;
+    holdTil = tid + 0.35;
+  } else {
+    forste = true;
+  }
+  // Første billede tegnes med det samme, så baggrunden er klar, når siden vises
+  frame(performance.now());
 })();

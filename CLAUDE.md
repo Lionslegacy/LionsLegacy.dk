@@ -22,11 +22,12 @@ Dette repository er hjemmesiden **lionslegacy.dk** for virksomheden Lion’s Leg
 | `assets/css/style.css` | Al styling. Farver, gradienter og skrift som variabler i `:root` |
 | `assets/js/main.js` | Mobilmenu, årstal, header ved scroll, lys på kort, indhold der glider frem, formularvalidering og `?produkt=`-udfyldning |
 | `assets/js/scene.js` | 3D-baggrunden (WebGL uden biblioteker): flydende guld, gnister og lysstrømme, der følger musen. Opretter også pauseknappen |
+| `assets/js/sideskift.js` | Glidende sideskift: vælger retning (frem/tilbage i menuens rækkefølge) og holder menulinjen og 3D-baggrunden stille, mens indholdet glider. Styles under "Glidende sideskift" i `style.css` |
 | `assets/fonts/` | Selvhostede skrifttyper (Bodoni Moda, Jost) |
 | `assets/img/` | Logo (`maerke.svg`), favicon, delingsbillede (`deling.jpg`), `produkter/` til produktbilleder |
 | `sitemap.xml`, `robots.txt` | Søgemaskiner. Tilføj nye sider til `sitemap.xml` |
 
-Header (menu) og footer er **kopieret ind i hver HTML-fil**. Ændrer du menu, kontaktoplysninger eller footer, så ret det i alle syv HTML-filer, også `404.html`. Alle sider indlæser `main.js` og `scene.js` nederst. `<body>` har `data-scene="forside"` på forsiden (stor skulptur i hero) og `data-scene="side"` på alle andre sider (mindre skulptur øverst til højre). Headerens `<div class="top__handling">` er der, hvor `scene.js` sætter pauseknappen ind.
+Header (menu) og footer er **kopieret ind i hver HTML-fil**. Ændrer du menu, kontaktoplysninger eller footer, så ret det i alle syv HTML-filer, også `404.html`. Alle sider indlæser `sideskift.js` i `<head>` (lige efter `style.css`) og `main.js` (med `defer`) og `scene.js` (uden `defer`, så baggrunden er tegnet, før siden vises) nederst. `<body>` har `data-scene="forside"` på forsiden (stor skulptur i hero) og `data-scene="side"` på alle andre sider (mindre skulptur øverst til højre). Headerens `<div class="top__handling">` er der, hvor `scene.js` sætter pauseknappen ind.
 
 ## Designregler
 
@@ -38,7 +39,9 @@ Siden er et mørkt luksustema i guld og orange med en levende 3D-baggrund (inspi
 - Flader er mørkt glas: `.glas` (halvgennemsigtig med sløret baggrund og runde hjørner, `--radius`), gerne med `.glas--kant` (guld/orange hårlinje) og `.lys` (blødt lys, der følger markøren). Knapper, menu og små etiketter (`.maerkat`) er piller. Ingen versaler-etiketter, ingen emojis.
 - Længere tekst skal stå på en `.glas`-flade, så den altid kan læses oven på 3D-baggrunden. `<body>` må ikke have en baggrund (så skjules 3D-baggrunden); baggrundsfarven ligger på `<html>`.
 - 3D-baggrunden i `scene.js` er sidens eneste animation, der kører af sig selv. Den skal blive ved med at: følge musen, stoppe når fanen er skjult, stå stille ved `prefers-reduced-motion`, sænke opløsningen eller stoppe på svage maskiner og have pauseknappen i menulinjen (kræves af WCAG 2.2.2). Den er skrevet i ren WebGL uden biblioteker. Hent ikke Three.js eller andet fra et CDN.
-- Indhold må glide blidt frem ved scroll med attributten `data-frem` (gøres kun, når bevægelse er tilladt). Tilføj ikke andre animationer.
+- Indhold må glide blidt frem ved scroll med attributten `data-frem` (gøres kun, når bevægelse er tilladt).
+- Når man skifter side, glider indholdet ud, og den nye side glider ind fra siden (browserens View Transitions, `sideskift.js`). Menulinjen og 3D-baggrunden bliver stående. Frem i menuens rækkefølge glider mod venstre, tilbage mod højre. Kører kun, når bevægelse er tilladt, og browsere uden understøttelse skifter side som normalt. Får en ny side en plads i menuen, så tilføj den i `ORDEN` i `sideskift.js`.
+- Tilføj ikke andre animationer.
 - Brug de eksisterende klasser (`.sektion`, `.ramme`, `.glas`, `.knap--guld`, `.knap--glas`, `.maerkat`, `.pillink`, `.produkter`, `.trin`, `.ydelser`, `.opfordring` osv.) før du skriver ny CSS.
 - Logoet er `assets/img/maerke.svg` (løve med to L’er, uden ring). Indsæt det som `<img src="assets/img/maerke.svg" alt="">`, ikke som indlejret SVG. Fanebladsikonet er LL-seglet i `favicon.svg`. Delingsbilledet til sociale medier er `deling.jpg` (1200 × 630).
 - Brandnavnet skrives **Lion’s Legacy** med typografisk apostrof (’).
