@@ -10,6 +10,8 @@
       var aaben = knap.getAttribute("aria-expanded") === "true";
       knap.setAttribute("aria-expanded", String(!aaben));
       nav.classList.toggle("er-aaben", !aaben);
+      // Flyt fokus ind i menuen, så tastaturbrugere lander i den
+      if (!aaben) { var forste = nav.querySelector("a"); if (forste) forste.focus(); }
     });
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape" && nav.classList.contains("er-aaben")) {
@@ -24,6 +26,51 @@
   document.querySelectorAll("[data-aar]").forEach(function (el) {
     el.textContent = String(new Date().getFullYear());
   });
+
+  // Headeren er gennemsigtig øverst og bliver til glas, når man scroller
+  var top = document.querySelector(".top");
+  if (top) {
+    var tjekTop = function () { top.classList.toggle("top--oeverst", window.scrollY < 8); };
+    tjekTop();
+    window.addEventListener("scroll", tjekTop, { passive: true });
+  }
+
+  // Lys, der følger markøren hen over kort og paneler
+  document.querySelectorAll(".lys").forEach(function (kort) {
+    kort.addEventListener("pointermove", function (e) {
+      var r = kort.getBoundingClientRect();
+      kort.style.setProperty("--mx", (e.clientX - r.left) + "px");
+      kort.style.setProperty("--my", (e.clientY - r.top) + "px");
+    });
+  });
+
+  // Indhold glider blidt frem, når det kommer ind i billedet.
+  // Springes over for besøgende, der har slået bevægelse fra.
+  var rolig = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!rolig && "IntersectionObserver" in window) {
+    var frem = document.querySelectorAll("[data-frem]");
+    frem.forEach(function (el) {
+      // Kort i samme række kommer frem et ad gangen
+      var nr = 0, s = el.previousElementSibling;
+      while (s) { if (s.hasAttribute("data-frem")) nr++; s = s.previousElementSibling; }
+      el.style.setProperty("--n", String(Math.min(nr, 5)));
+    });
+    var obs = new IntersectionObserver(function (poster) {
+      poster.forEach(function (p) {
+        if (p.isIntersecting) { p.target.classList.add("er-fremme"); obs.unobserve(p.target); }
+      });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.08 });
+    frem.forEach(function (el) {
+      var r = el.getBoundingClientRect();
+      if (r.top < window.innerHeight && r.bottom > 0) return; // allerede synligt: vis med det samme
+      obs.observe(el);
+    });
+    document.documentElement.classList.add("js-frem");
+    frem.forEach(function (el) {
+      var r = el.getBoundingClientRect();
+      if (r.top < window.innerHeight && r.bottom > 0) el.classList.add("er-fremme");
+    });
+  }
 
   // Kontaktformular: åbner besøgendes mailprogram med beskeden udfyldt
   var formular = document.getElementById("kontaktformular");

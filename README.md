@@ -118,14 +118,19 @@ Ved hver pull request kører **Kvalitetstjek** automatisk på GitHub. Det tjekke
 
 Tjekket er en hjælp, ikke juridisk rådgivning.
 
+## Design og 3D-baggrund
+
+Siden har et mørkt luksustema i guld og orange. Bag indholdet kører en 3D-baggrund: en skulptur af flydende guld med et snoet bånd og dråber, gnister og glødende lysstrømme. Den følger musen, ligger stille for besøgende, der har slået animationer fra på deres enhed, og kan stoppes med pauseknappen i menulinjen. Baggrunden tegnes direkte i browseren (`assets/js/scene.js`) uden eksterne biblioteker, så der stadig ikke sendes data til tredjepart. Kan en browser ikke vise 3D, ser den en rolig guld/orange gradient i stedet.
+
 ## Farver og skrift
 
-Alle farver ligger øverst i `assets/css/style.css`:
+Alle farver og gradienter ligger øverst i `assets/css/style.css`:
 
-- Antracit `#1c1d20` (baggrund)
-- Messingguld `#c6a15b` (accent)
-- Pergament `#ece5d8` (tekst)
+- Sort `#0b0a09` (baggrund)
+- Guld `#d6a85a` og lys guld `#f2d39a` (accent)
+- Orange `#ec7a2c` (glød og gradienter)
+- Pergament `#f3ebdd` (tekst)
 
 Skrifttyper: Bodoni Moda (overskrifter) og Jost (brødtekst), begge under SIL Open Font License (se `assets/fonts`).
 
-Logoet er `assets/img/maerke.svg`: løven med to L’er (Lion og Legacy) i en dobbelt guldring. Alle sider henter det fra den ene fil (menu, footer, citatet på forsiden, produktpladsholdere og fejlsiden), så erstatter du filen, skifter logoet overalt. Fanebladsikonet er `favicon.svg` og `favicon-32.png` (LL-seglet), og ikonet til telefonens hjemmeskærm er `apple-touch-icon.png`.
+Logoet er `assets/img/maerke.svg`: løven med to L’er (Lion og Legacy), uden ring. Alle sider henter det fra den ene fil (menu, footer, citatet på forsiden, produktpladsholdere og fejlsiden), så erstatter du filen, skifter logoet overalt. Fanebladsikonet er `favicon.svg` og `favicon-32.png` (LL-seglet), og ikonet til telefonens hjemmeskærm er `apple-touch-icon.png`. Billedet, der vises, når siden deles på sociale medier, er `deling.jpg`.

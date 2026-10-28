@@ -7,14 +7,14 @@
   <meta name="description" content="Siden findes ikke.">
   <meta name="robots" content="noindex">
   <link rel="canonical" href="https://lionslegacy.dk/404.html">
-  <meta name="theme-color" content="#1c1d20">
+  <meta name="theme-color" content="#0b0a09">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="da_DK">
   <meta property="og:site_name" content="Lion’s Legacy">
   <meta property="og:title" content="Siden findes ikke | Lion’s Legacy">
   <meta property="og:description" content="Siden findes ikke.">
   <meta property="og:url" content="https://lionslegacy.dk/404.html">
-  <meta property="og:image" content="https://lionslegacy.dk/assets/img/deling.png">
+  <meta property="og:image" content="https://lionslegacy.dk/assets/img/deling.jpg">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/assets/img/favicon-32.png" sizes="32x32" type="image/png">
@@ -23,28 +23,33 @@
   <link rel="preload" href="/assets/fonts/jost-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/assets/css/style.css">
 </head>
-<body>
+<body data-scene="side">
 <a class="spring" href="#indhold">Gå til indhold</a>
 <header class="top">
   <div class="ramme top__indre">
     <a class="brand" href="/" aria-label="Lion’s Legacy, til forsiden"><img src="/assets/img/maerke.svg" alt="" width="100" height="100"><span>Lion’s Legacy</span></a>
-    <button class="menu-knap" type="button" aria-expanded="false" aria-controls="hovedmenu">
-      <span class="menu-knap__streger" aria-hidden="true"></span>Menu
-    </button>
     <nav class="nav" id="hovedmenu" aria-label="Hovedmenu">
       <ul><li><a href="/produkter.html">Produkter</a></li><li><a href="/studie.html">Studie</a></li><li><a href="/om-os.html">Om os</a></li><li><a href="/kontakt.html">Kontakt</a></li></ul>
     </nav>
+    <div class="top__handling">
+      <button class="menu-knap" type="button" aria-expanded="false" aria-controls="hovedmenu">
+        <span class="menu-knap__streger" aria-hidden="true"></span><span class="menu-knap__tekst">Menu</span>
+      </button>
+      <a class="knap knap--guld knap--lille top__cta" href="/kontakt.html">Start et projekt</a>
+    </div>
   </div>
 </header>
 <main id="indhold">
 <section class="fejlside">
   <div class="ramme">
-    <img src="/assets/img/maerke.svg" alt="" width="100" height="100">
-    <h1>Siden findes ikke</h1>
-    <p class="lead">Adressen er måske skrevet forkert, eller siden er flyttet.</p>
-    <div class="knapper">
-      <a class="knap knap--guld" href="/">Gå til forsiden</a>
-      <a class="knap knap--linje" href="/kontakt.html">Kontakt os</a>
+    <div class="fejlside__panel glas glas--kant">
+      <img src="/assets/img/maerke.svg" alt="" width="100" height="100">
+      <h1>Siden <em class="guldtekst">findes ikke</em></h1>
+      <p class="lead">Adressen er måske skrevet forkert, eller siden er flyttet.</p>
+      <div class="knapper">
+        <a class="knap knap--guld" href="/">Gå til forsiden <span class="pil" aria-hidden="true"></span></a>
+        <a class="knap knap--glas" href="/kontakt.html">Kontakt os</a>
+      </div>
     </div>
   </div>
 </section>
@@ -82,6 +87,7 @@
         </address>
       </div>
     </div>
+    <p class="fod__ordmaerke" aria-hidden="true">Lion’s Legacy</p>
     <div class="fod__bund">
       <p>© <span data-aar>2026</span> Lion’s Legacy</p>
       <p><a href="/privatliv.html">Privatlivspolitik</a></p>
@@ -89,5 +95,6 @@
   </div>
 </footer>
 <script src="/assets/js/main.js" defer></script>
+<script src="/assets/js/scene.js" defer></script>
 </body>
 </html>
