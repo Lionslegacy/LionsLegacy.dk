@@ -527,10 +527,6 @@ a:hover > .pil { transform: translateX(3px) rotate(45deg); }
   font-size: 0.95rem;
 }
 .hero__fod p { margin: 0; }
-.hero__hint { display: none; }
-@media (hover: hover) and (pointer: fine) {
-  .hero__hint { display: block; }
-}
 @media (max-width: 760px) {
   /* På mobil står skulpturen øverst, og teksten under den */
   .hero {
@@ -983,6 +979,43 @@ a:hover > .pil { transform: translateX(3px) rotate(45deg); }
 }
 .js-frem [data-frem].er-fremme { opacity: 1; transform: none; }
 
+/* ---------- Glidende sideskift (sideskift.js) ----------
+   Indholdet glider ud, og den nye side glider ind, mens menulinjen og
+   3D-baggrunden bliver stående. Kun når bevægelse er tilladt.
+   Den gamle side får klassen skift-ud, den nye skift-ind. */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition { navigation: auto; }
+}
+html { --skift-vej: 1; }
+html.skift--tilbage { --skift-vej: -1; }
+html.skift-ud .top,
+html.skift-ind .top { view-transition-name: top; }
+html.skift-ud main { view-transition-name: ud-indhold; }
+html.skift-ud .fod { view-transition-name: ud-fod; }
+html.skift-ind main { view-transition-name: ind-indhold; }
+html.skift-ind .fod { view-transition-name: ind-fod; }
+/* Baggrunden (resten af siden) skifter med en blød overtoning */
+::view-transition-group(root),
+::view-transition-old(root),
+::view-transition-new(root) { animation-duration: 0.35s; }
+::view-transition-group(top),
+::view-transition-old(top),
+::view-transition-new(top) { animation-duration: 0.5s; }
+::view-transition-old(ud-indhold),
+::view-transition-old(ud-fod) {
+  animation: skift-ud 0.34s cubic-bezier(0.55, 0, 0.9, 0.5) both;
+}
+::view-transition-new(ind-indhold),
+::view-transition-new(ind-fod) {
+  animation: skift-ind 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+}
+@keyframes skift-ud {
+  to { opacity: 0; transform: translateX(calc(var(--skift-vej) * clamp(-56px, -4vw, -24px))); filter: blur(6px); }
+}
+@keyframes skift-ind {
+  from { opacity: 0; transform: translateX(calc(var(--skift-vej) * clamp(36px, 6vw, 88px))); filter: blur(6px); }
+}
+
 /* Høj kontrast (Windows): vis gradienttekst som almindelig tekst */
 @media (forced-colors: active) {
   .guldtekst, .trin li::after, .fod__ordmaerke {
@@ -995,6 +1028,9 @@ a:hover > .pil { transform: translateX(3px) rotate(45deg); }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition: none !important; animation: none !important; }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) { animation: none !important; }
 }
 
 @media print {
