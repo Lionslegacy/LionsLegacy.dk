@@ -34,7 +34,7 @@ Header (menu) og footer er **kopieret ind i hver HTML-fil**. Ændrer du menu, ko
 Siden er et mørkt luksustema i guld og orange med en levende 3D-baggrund (inspireret af getlayers.ai, især skabelonen "Laocoon").
 
 - Palet (brug kun disse via CSS-variablerne): sort `--sort #0b0a09` (baggrund), `--dyb #110f0c`, `--flade #18140f`, guld `--guld #d6a85a`, `--guld-lys #f2d39a`, orange `--orange #ec7a2c`, kobber `--kobber #b4521a`, pergament `--pergament #f3ebdd` (tekst), sten `--sten #bcb1a0` (sekundær tekst).
-- Gradienter: `--gradient` (guldknapper), `--gradient-tekst` (fremhævede ord), `--gradient-kant` (hårfine kanter). Fremhæv ét eller to ord i en overskrift med `<em class="guldtekst">…</em>`, ikke hele afsnit.
+- Gradienter: `--gradient` (guldknapper), `--gradient-tekst` (fremhævede ord), `--gradient-kant` (hårfine kanter). Fremhæv ét eller to ord i en overskrift med `<em class="guldtekst">…</em>`, ikke hele afsnit. Guldet males kun inden for ordets kasse, så `em.guldtekst` har lidt ekstra padding (med negativ margin), for at kursive bogstaver som f, y og ? ikke skæres af. Bruges en gradient på andet end `<em>` eller med tæt linjehøjde, så tjek at bogstavernes haler står hele.
 - Overskrifter: Bodoni Moda (`--serif`). Brødtekst: Jost (`--sans`). Tilføj ikke nye skrifttyper.
 - Flader er mørkt glas: `.glas` (halvgennemsigtig med sløret baggrund og runde hjørner, `--radius`), gerne med `.glas--kant` (guld/orange hårlinje) og `.lys` (blødt lys, der følger markøren). Knapper, menu og små etiketter (`.maerkat`) er piller. Ingen versaler-etiketter, ingen emojis.
 - Længere tekst skal stå på en `.glas`-flade, så den altid kan læses oven på 3D-baggrunden. `<body>` må ikke have en baggrund (så skjules 3D-baggrunden); baggrundsfarven ligger på `<html>`.
