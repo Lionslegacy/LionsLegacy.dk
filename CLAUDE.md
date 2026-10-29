@@ -21,7 +21,7 @@ Dette repository er hjemmesiden **lionslegacy.dk** for virksomheden Lion’s Leg
 | `404.html` | Fejlside. Bruger **absolutte** stier (`/assets/...`, `/kontakt.html`) |
 | `assets/css/style.css` | Al styling. Farver, gradienter og skrift som variabler i `:root` |
 | `assets/js/main.js` | Mobilmenu, årstal, header ved scroll, lys på kort, indhold der glider frem, formularvalidering og `?produkt=`-udfyldning |
-| `assets/js/scene.js` | 3D-baggrunden (WebGL uden biblioteker): løven fra logoet i poleret guld, gnister og lysstrømme, der følger musen. Opretter også pauseknappen. Løvens streger er kopieret fra `maerke.svg` til `LOGO_STREG` og `LOGO_FYLD`, så ændres logoet, skal de rettes med |
+| `assets/js/scene.js` | 3D-baggrunden (WebGL uden biblioteker): løven fra logoet i poleret guld, der kigger derhen, hvor musen er, og gnister og lysstrømme, der følger musen. Opretter også pauseknappen. Løvens streger er kopieret fra `maerke.svg` til `LOGO_STREG` og `LOGO_FYLD`, så ændres logoet, skal de rettes med |
 | `assets/js/sideskift.js` | Glidende sideskift: vælger retning (frem/tilbage i menuens rækkefølge) og holder menulinjen og 3D-baggrunden stille, mens indholdet glider. Styles under "Glidende sideskift" i `style.css` |
 | `assets/fonts/` | Selvhostede skrifttyper (Bodoni Moda, Jost) |
 | `assets/img/` | Logo (`maerke.svg`), favicon, delingsbillede (`deling.jpg`), `produkter/` til produktbilleder |

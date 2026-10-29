@@ -385,12 +385,13 @@
 
   // Markøren: mål og blødt fulgt værdi. Uden mus svæver den af sig selv.
   var mus = { x: 0, y: 0, sidst: -1e9 };
+  var harMus = false;
   var m = { x: svaevX(tid), y: svaevY(tid) };
-  var cur = { cx: 0, cy: 0, sc: 1, dim: 1, flow: 1, scroll: 0 };
+  var cur = { cx: 0, cy: 0, sc: 1, dim: 1, flow: 1 };
   var forste = true;
   var holdTil = 0, glidTil = 0;
 
-  // Den langsomme svæven, markøren følger, når musen står stille
+  // Den langsomme svæven, løven kigger efter, når der ikke er en mus (fx på mobil)
   function svaevX(t) { return Math.sin(t * 0.23) * 0.55 + Math.sin(t * 0.11 + 1.3) * 0.2; }
   function svaevY(t) { return Math.sin(t * 0.17 + 0.7) * 0.4; }
 
@@ -458,18 +459,18 @@
     cur.dim += (mal.dim - cur.dim) * a;
     cur.flow += (mal.flow - cur.flow) * a;
 
-    // Markør: brug den rigtige, ellers en langsom svæven
-    var tomgang = rolig ? 0 : (tid - mus.sidst > 4 ? 1 : 0);
-    var tx = tomgang ? svaevX(tid) : mus.x, ty = tomgang ? svaevY(tid) : mus.y;
-    var b = 1 - Math.exp(-dt * (tomgang ? 0.8 : 4.5));
+    // Markør: brug musen. Uden mus (fx på mobil) svæver punktet roligt rundt om løven.
+    var tomgang = rolig ? 0 : (!harMus && tid - mus.sidst > 4 ? 1 : 0);
+    var tx = tomgang ? mal.cx / mal.halvB + svaevX(tid) * 0.6 : mus.x;
+    var ty = tomgang ? mal.cy / mal.halvH + svaevY(tid) * 0.6 : mus.y;
+    // Står baggrunden stille (pause eller reduceret bevægelse), bliver løven, hvor den er
+    var b = koerer() ? 1 - Math.exp(-dt * (tomgang ? 0.8 : 5)) : 0;
     m.x += (tx - m.x) * b;
     m.y += (ty - m.y) * b;
-
-    cur.scroll = mal.s;
     return mal;
   }
 
-  // Løven drejer sig mod markøren og svajer roligt. Drejningen samles i én matrix,
+  // Løven drejer sig, så den kigger mod markøren. Drejningen samles i én matrix,
   // så grafikkortet slipper for at regne den pr. pixel.
   var M = new Float32Array(9);
   function drejMatrix(ay, ax) {
@@ -488,11 +489,12 @@
     var aspect = mal.aspect;
     var mux = m.x * 0.5 * aspect, muy = m.y * 0.5;           // markør i skærmkoordinater
     var mwx = m.x * mal.halvB, mwy = m.y * mal.halvH;          // markør i verden
-    // Løven vender sig mod markøren, men aldrig så meget, at den ses fra kanten.
-    // Den svajer roligt, når bevægelse er tilladt, og drejer lidt, når man scroller.
-    var ox = (mwx - cur.cx) / mal.halvB, oy = (mwy - cur.cy) / mal.halvH, sv = rolig ? 0 : 1;
-    var ay = Math.atan(ox * 1.2) * 0.5 + sv * 0.2 * Math.sin(tid * 0.33) + Math.min(cur.scroll, 2) * 0.3;
-    var ax = -Math.atan(oy * 1.2) * 0.4 + sv * 0.1 * Math.sin(tid * 0.27 + 1);
+    // Løven kigger mod et punkt lidt foran markøren, så den vender ansigtet derhen,
+    // hvor musen er, men aldrig så meget, at den ses fra kanten.
+    // Ved reduceret bevægelse står den stille og kigger frem.
+    var dx = rolig ? 0 : mwx - cur.cx, dy = rolig ? 0 : mwy - cur.cy, D = 2.4;
+    var ay = Math.max(-0.95, Math.min(0.95, -Math.atan2(dx, D)));
+    var ax = Math.max(-0.7, Math.min(0.7, -Math.atan2(dy, Math.sqrt(dx * dx + D * D))));
     var lx = m.x * 1.3, ly = 0.55 + m.y * 0.6, lz = 0.85;
     var ll = Math.sqrt(lx * lx + ly * ly + lz * lz);
 
@@ -579,10 +581,13 @@
     mus.y = -(y / window.innerHeight * 2 - 1);
     mus.sidst = tid;
   }
-  window.addEventListener("pointermove", function (e) { peg(e.clientX, e.clientY); }, { passive: true });
+  window.addEventListener("pointermove", function (e) {
+    if (e.pointerType !== "touch") harMus = true;
+    peg(e.clientX, e.clientY);
+  }, { passive: true });
   // Efter et sideskift ved browseren, hvor musen står, før den flyttes
   window.addEventListener("pointerover", function (e) {
-    if (e.pointerType !== "touch") peg(e.clientX, e.clientY);
+    if (e.pointerType !== "touch") { harMus = true; peg(e.clientX, e.clientY); }
   }, { passive: true });
 
   window.addEventListener("resize", function () { if (!koerer()) { forste = true; tegnEnGang(); } }, { passive: true });
@@ -633,8 +638,9 @@
     // Musen står sandsynligvis på det menupunkt, der blev klikket på
     var punkt = document.querySelector('.nav [aria-current="page"]') || (forside && document.querySelector(".brand"));
     var r = punkt && window.matchMedia("(hover: hover) and (pointer: fine)").matches ? punkt.getBoundingClientRect() : null;
-    if (r && r.width) { peg(r.left + r.width / 2, r.top + r.height / 2); m.x = mus.x; m.y = mus.y; }
     var start0 = maal(fra === "forside", 0);
+    if (r && r.width) { harMus = true; peg(r.left + r.width / 2, r.top + r.height / 2); m.x = mus.x; m.y = mus.y; }
+    else { m.x = start0.cx / start0.halvB + svaevX(tid) * 0.6; m.y = start0.cy / start0.halvH + svaevY(tid) * 0.6; }
     cur.cx = start0.cx + m.x * 0.06 * start0.halvH;
     cur.cy = start0.cy + m.y * 0.05 * start0.halvH;
     cur.sc = start0.sc; cur.dim = start0.dim; cur.flow = start0.flow;
@@ -642,6 +648,9 @@
     holdTil = tid + 0.2;
     glidTil = tid + 1.4;
   } else {
+    var start1 = maal(forside, window.scrollY);
+    m.x = start1.cx / start1.halvB + svaevX(tid) * 0.6;
+    m.y = start1.cy / start1.halvH + svaevY(tid) * 0.6;
     forste = true;
   }
   // Første billede tegnes med det samme, så baggrunden er klar, når siden vises
