@@ -120,7 +120,7 @@ Tjekket er en hjælp, ikke juridisk rådgivning.
 
 ## Design og 3D-baggrund
 
-Siden har et mørkt luksustema i guld og orange. Bag indholdet kører en 3D-baggrund: løven fra logoet i poleret guld, gnister og glødende lysstrømme. Løven drejer sig mod musen, ligger stille for besøgende, der har slået animationer fra på deres enhed, og kan stoppes med pauseknappen i menulinjen. Baggrunden tegnes direkte i browseren (`assets/js/scene.js`) uden eksterne biblioteker, så der stadig ikke sendes data til tredjepart. Kan en browser ikke vise 3D, ser den en rolig guld/orange gradient i stedet. Når man skifter side, glider indholdet blødt ud og ind, mens menulinjen og 3D-baggrunden bliver stående (`assets/js/sideskift.js`). Det sker ikke for besøgende, der har slået animationer fra.
+Siden har et mørkt luksustema i guld og orange. Bag indholdet kører en 3D-baggrund: løven fra logoet i poleret guld, gnister og glødende lysstrømme. Løven vender ansigtet derhen, hvor musen er (på mobil kigger den roligt rundt), ligger stille for besøgende, der har slået animationer fra på deres enhed, og kan stoppes med pauseknappen i menulinjen. Baggrunden tegnes direkte i browseren (`assets/js/scene.js`) uden eksterne biblioteker, så der stadig ikke sendes data til tredjepart. Kan en browser ikke vise 3D, ser den en rolig guld/orange gradient i stedet. Når man skifter side, glider indholdet blødt ud og ind, mens menulinjen og 3D-baggrunden bliver stående (`assets/js/sideskift.js`). Det sker ikke for besøgende, der har slået animationer fra.
 
 ## Farver og skrift
 
