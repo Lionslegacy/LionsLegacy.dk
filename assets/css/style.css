@@ -180,13 +180,20 @@ a[href^="tel:"] { white-space: nowrap; }
 }
 .daempet { color: var(--sten); }
 
-/* Tekst i guld/orange gradient */
+/* Tekst i guld/orange gradient.
+   Guldet males kun inden for ordets kasse, og kursive bogstaver stikker
+   ud over den (foden på f, spidsen af ?, halen på y). Kassen gøres derfor
+   lidt bredere med padding, og den negative margin holder teksten på plads. */
 .guldtekst {
   background: var(--gradient-tekst);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
+}
+em.guldtekst {
+  padding: 0 0.12em 0 0.25em;
+  margin: 0 -0.12em 0 -0.25em;
 }
 
 /* Lille pille over overskrifter */
@@ -508,8 +515,10 @@ a:hover > .pil { transform: translateX(3px) rotate(45deg); }
   display: block;
   font-style: italic;
   font-weight: 400;
-  padding-right: 0.08em;
-  margin-left: 0.04em;
+  /* Den tætte linjehøjde gør kassen lavere end halen på g og y.
+     Padding forneden giver guldet plads, den negative margin holder afstanden. */
+  padding: 0 0.12em 0.24em 0.1em;
+  margin: 0 0 -0.24em -0.06em;
 }
 .hero__tekst {
   font-size: clamp(1.15rem, 1vw + 0.95rem, 1.45rem);
@@ -918,6 +927,7 @@ a:hover > .pil { transform: translateX(3px) rotate(45deg); }
   letter-spacing: -0.035em;
   white-space: nowrap;
   text-align: center;
+  padding-bottom: 0.2em;                  /* plads til halen på g og y */
   background: linear-gradient(180deg, rgba(242, 211, 154, 0.5), rgba(236, 122, 44, 0.12) 75%, transparent);
   -webkit-background-clip: text;
   background-clip: text;
