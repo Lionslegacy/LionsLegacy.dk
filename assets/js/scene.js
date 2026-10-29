@@ -1,5 +1,5 @@
 /* Lion’s Legacy — 3D-baggrund
-   En skulptur af flydende guld, gnister og en glødende guld/orange strøm.
+   Løven fra logoet i poleret guld, gnister og en glødende guld/orange strøm.
    Tegnes med WebGL direkte i browseren: ingen biblioteker, ingen tredjepart,
    ingen cookies. Følger musen, stopper når fanen er skjult, og står stille
    for besøgende, der har slået bevægelse fra (prefers-reduced-motion). */
@@ -32,12 +32,10 @@
     "uniform float uScale;",
     "uniform float uDim;",    // skulpturens lysstyrke
     "uniform float uFlow;",   // strømmens lysstyrke
-    "uniform vec3 uDrop;",    // dråben, der trækkes mod markøren
     "uniform vec3 uLight;",
-    "uniform mat3 uBand;",    // båndets drejning (beregnes i JavaScript)
-    "uniform vec4 uOrb0;",    // dråber i kredsløb: position og radius
-    "uniform vec4 uOrb1;",
-    "uniform vec4 uOrb2;",
+    "uniform mat3 uDrej;",    // løvens drejning mod markøren (beregnes i JavaScript)
+    "uniform sampler2D uLogo;", // løvens omrids som afstandsfelt (se logoFelt)
+    "uniform float uLogoN;",  // feltets størrelse i pixels
 
     "const float FL = 2.2;",
     "const vec3 RO = vec3(0.0, 0.0, 6.0);",
@@ -47,8 +45,6 @@
     "  return mix(mix(hash(i),hash(i+vec2(1.0,0.0)),u.x),mix(hash(i+vec2(0.0,1.0)),hash(i+vec2(1.0,1.0)),u.x),u.y);}",
     "float fbm(vec2 p){float v=0.0,a=0.5;mat2 m=mat2(1.6,1.2,-1.2,1.6);",
     "  for(int i=0;i<4;i++){v+=a*noise(p);p=m*p;a*=0.5;}return v;}",
-    "mat2 rot(float a){float c=cos(a),s=sin(a);return mat2(c,-s,s,c);}",
-    "float smin(float a,float b,float k){float h=clamp(0.5+0.5*(b-a)/k,0.0,1.0);return mix(b,a,h)-k*h*(1.0-h);}",
 
     // Guld/orange farveskala til strømmen (sRGB)
     "vec3 ramp(float x){",
@@ -59,32 +55,39 @@
     "  if(x<0.82)return mix(c2,c3,(x-0.6)/0.22);",
     "  return mix(c3,c4,(x-0.82)/0.18);}",
 
-    // Skulpturen: en flydende kerne, et snoet bånd og dråber
-    "float band(vec3 p){",
-    "  float a=atan(p.z,p.x);",
-    "  vec2 q=vec2(length(p.xz)-1.0,p.y);",
-    "  q=rot(a*1.5+uTime*0.35)*q;",
-    "  vec2 d=abs(q)-vec2(0.17,0.032);",
-    "  return length(max(d,0.0))+min(max(d.x,d.y),0.0)-0.022;}",
-
+    // Løvens omrids: afstand til logoet i planet (negativ inde i stregerne).
+    // Feltet dækker -1..1. Til lysberegningen (GLAT) læses det blødt, så guldet ikke får små riller.
+    "float GLAT=0.0;",
+    "vec4 kub(float v){vec4 n=vec4(1.0,2.0,3.0,4.0)-v;vec4 s=n*n*n;",
+    "  float x=s.x,y=s.y-4.0*s.x,z=s.z-4.0*s.y+6.0*s.x;return vec4(x,y,z,6.0-x-y-z)/6.0;}",
+    "vec4 bloedt(vec2 uv){",
+    "  vec2 st=uv*uLogoN-0.5;vec2 f=fract(st);st-=f;",
+    "  vec4 xc=kub(f.x),yc=kub(f.y);",
+    "  vec4 c=st.xxyy+vec2(-0.5,1.5).xyxy;",
+    "  vec4 s=vec4(xc.xz+xc.yw,yc.xz+yc.yw);",
+    "  vec4 o=(c+vec4(xc.yw,yc.yw)/s)/uLogoN;",
+    "  vec4 a=texture2D(uLogo,o.xz),b=texture2D(uLogo,o.yz),e=texture2D(uLogo,o.xw),d=texture2D(uLogo,o.yw);",
+    "  float sx=s.x/(s.x+s.y),sy=s.z/(s.z+s.w);",
+    "  return mix(mix(d,e,sx),mix(b,a,sx),sy);}",
+    "float logo(vec2 q){",
+    "  vec2 uv=clamp(vec2(0.5+q.x*0.5,0.5-q.y*0.5),0.001,0.999);",
+    "  vec4 t=GLAT>0.5?bloedt(uv):texture2D(uLogo,uv);",
+    "  float fin=(t.a-0.5)*0.04;",
+    "  float d=abs(fin)<0.0195?fin:(t.r-0.5)*0.25;",
+    "  vec2 o=abs(q)-0.999;",
+    "  return max(d,length(max(o,0.0)));}",
+    // Løven: logoets streger som afrundet, poleret guld, hvor en bølge af lys løber op
     "float map(vec3 w){",
-    "  vec3 p=(w-uCenter)/uScale;",
-    "  float t=uTime;",
-    // Kernen ånder
-    "  float core=length(p)-0.56;",
-    "  core+=0.022*sin(5.0*p.x+t*1.1)*sin(5.0*p.y+t*0.8)*sin(5.0*p.z+t*0.9);",
-    // Dråben ved markøren trækkes ud af kernen
-    "  float d=smin(core,length(p-uDrop)-0.105,0.24);",
-    // Dråber i kredsløb, der smelter sammen med kernen
-    "  d=smin(d,length(p-uOrb0.xyz)-uOrb0.w,0.26);",
-    "  d=smin(d,length(p-uOrb1.xyz)-uOrb1.w,0.26);",
-    "  d=smin(d,length(p-uOrb2.xyz)-uOrb2.w,0.26);",
-    // Båndet drejer med musen og langsomt af sig selv
-    "  d=min(d,band(uBand*p)*0.75);",
-    "  return d*uScale;}",
+    "  vec3 q=uDrej*((w-uCenter)/uScale);",
+    "  float S=1.12;",
+    "  float flow=pow(0.5+0.5*sin(q.y*3.0-uTime*1.4),8.0);",
+    "  float H=0.05+0.01*flow;",
+    "  float l=logo(q.xy/S)*S-0.016-0.006*flow;",
+    "  return (length(vec2(max(l+H,0.0),q.z))-H)*0.9*uScale;}",
 
-    "vec3 normal(vec3 p){vec2 e=vec2(0.0015,-0.0015)*uScale;",
-    "  return normalize(e.xyy*map(p+e.xyy)+e.yyx*map(p+e.yyx)+e.yxy*map(p+e.yxy)+e.xxx*map(p+e.xxx));}",
+    "vec3 normal(vec3 p){vec2 e=vec2(0.002,-0.002)*uScale;GLAT=1.0;",
+    "  vec3 n=normalize(e.xyy*map(p+e.xyy)+e.yyx*map(p+e.yyx)+e.yxy*map(p+e.yxy)+e.xxx*map(p+e.xxx));",
+    "  GLAT=0.0;return n;}",
 
     // Et mørkt fotostudie med varme lyskasser, som guldet spejler
     "vec3 env(vec3 r){",
@@ -236,6 +239,100 @@
     return u;
   }
 
+  /* ---------- Løven fra logoet ----------
+     Stregerne er kopieret fra assets/img/maerke.svg. Ændres logoet, så kopier
+     de nye d-værdier hertil: den første sti tegnes som streg, resten fyldes. */
+
+  var LOGO_STREG = "M49.6 75.8C49.4 75.7 49 75.5 48.7 75.4C48.5 75.3 48.1 75.2 48 75.1C47.8 75 47.6 74.9 46.7 74.6C45.8 74.3 44.1 73.5 43.5 73.1C43.3 73 43 72.8 42.8 72.7C40.7 71.6 38.1 69.2 36.9 67.3C36.8 67.1 36.6 66.8 36.5 66.6C36 65.8 35.4 64.5 35.2 63.5C35.1 63.1 35 62.9 34.8 61.9C34.7 61.4 34.6 59.6 34.6 58.2C34.5 57.5 34.5 53.4 34.5 49.1L34.5 41.3L34.6 40.9C34.7 40.6 34.7 40.3 34.7 40.3C34.7 40 34.8 40.1 34.9 40.5C35.1 40.9 35.2 41.1 35.3 41.4C35.6 42 35.9 42.5 36 42.8C36.1 42.9 36.2 43.1 36.2 43.1C36.2 43.1 36.5 43.6 36.9 44.1C37.3 44.6 37.8 45.1 39.5 46.6C39.9 47.1 40.3 47.5 40.4 47.6L40.5 47.7L40.4 48.0C40.3 48.3 39.9 49.1 39 51.1C38.5 51.9 38.2 53 38 53.9C38 54.4 38 55.7 38 56.2C38.3 57.6 39.1 59.1 40.2 59.8C40.9 60.4 41.3 60.5 42 60.5C42.7 60.5 43.6 60.3 45.5 59.4C45.7 59.4 46.2 59.2 46.6 59.0C48 58.4 49.1 57.8 49.3 57.5C49.4 57.4 49.4 57.3 49.4 56.7C49.4 55.9 49.3 55.7 49.1 55.1C48.8 54.5 48 53.7 47.3 53.2C46.9 52.9 45.9 52.2 45.4 51.8C44.5 51.1 44.2 50.6 44.1 50.0C44 49.5 44.1 49.5 44.3 49.7C44.6 49.9 44.9 50 45.9 50.1C46.2 50.2 46.6 50.2 46.7 50.2C46.9 50.3 47.2 50.3 47.4 50.3C47.7 50.4 47.9 50.4 47.9 50.4C48 50.5 49.2 50.6 50 50.6C50.7 50.6 52 50.5 52.1 50.4C52.1 50.4 52.3 50.4 52.5 50.3C52.8 50.3 53.1 50.3 53.2 50.2C53.4 50.2 53.8 50.2 54.1 50.1C55.1 50 55.4 49.9 55.6 49.7C55.9 49.5 55.9 49.5 55.9 50.0C55.8 50.6 55.4 51.1 54.6 51.8C54 52.2 53 52.9 52.7 53.2C52 53.7 51.2 54.5 50.9 55.1C50.6 55.7 50.6 55.9 50.6 56.7C50.6 57.3 50.6 57.4 50.7 57.5C50.9 57.8 52 58.4 53.4 59.0C53.8 59.2 54.3 59.4 54.4 59.4C56.3 60.3 57.2 60.5 58 60.5C58.6 60.5 59.1 60.4 59.8 59.8C60.8 59.1 61.7 57.6 61.9 56.2C62 55.7 62 54.4 61.9 53.9C61.8 53 61.4 51.9 61 51.1C60 49.1 59.6 48.3 59.5 48.0L59.4 47.7L59.6 47.6C59.6 47.5 60 47.1 60.5 46.6C62.1 45.1 62.6 44.6 63 44.1C63.4 43.6 63.7 43.1 63.7 43.1C63.7 43.1 63.8 42.9 63.9 42.8C64.1 42.5 64.4 42 64.7 41.4C64.8 41.1 64.9 40.9 65 40.5C65.1 40.1 65.2 40 65.2 40.3C65.2 40.3 65.3 40.6 65.3 40.9L65.4 41.3L65.4 49.1C65.4 53.4 65.4 57.5 65.4 58.2C65.4 59.6 65.2 61.4 65.1 61.9C64.9 62.9 64.9 63.1 64.8 63.5C64.5 64.5 64 65.8 63.5 66.6C63.4 66.8 63.2 67.1 63 67.3C61.9 69.2 59.3 71.6 57.2 72.7C57 72.8 56.6 73 56.5 73.1C55.9 73.5 54.2 74.3 53.3 74.6C52.4 74.9 52.2 75 52 75.1C51.8 75.2 51.5 75.3 51.2 75.4C50.9 75.5 50.5 75.7 50.3 75.8C50.1 75.8 50 75.9 50 75.9C50 75.9 49.8 75.8 49.6 75.8ZM50.1 72.3C50.4 71.5 52.1 69.5 53.5 68.3C55.5 66.7 56.3 65.9 56.6 65.2C56.9 64.6 57.2 63.6 57.2 63.0C57.2 62.8 57.2 62.7 57.1 62.6C57 62.5 56.1 61.9 56 61.9C55.9 61.8 55.8 61.8 55.7 61.7C55.6 61.6 55.3 61.5 55.1 61.4C54.8 61.2 54.4 61 54.1 60.9C53.7 60.6 52.8 60.2 52.4 60.1C51.9 59.9 51.4 59.8 51.2 59.7C51.1 59.7 50.9 59.7 50.7 59.6C50.5 59.6 50.2 59.6 50 59.6C49.7 59.6 49.4 59.6 49.3 59.6C49.1 59.7 48.9 59.7 48.7 59.7C48.5 59.8 48.1 59.9 47.5 60.1C47.1 60.2 46.3 60.6 45.8 60.9C45.6 61 45.1 61.2 44.9 61.4C44.7 61.5 44.4 61.6 44.3 61.7C44.1 61.8 44 61.8 44 61.9C43.9 61.9 43 62.5 42.9 62.6C42.6 62.9 42.9 64.3 43.3 65.2C43.7 65.9 44.4 66.7 46.4 68.3C47.9 69.5 49.6 71.5 49.9 72.3C49.9 72.4 50 72.4 50 72.4C50 72.4 50 72.4 50.1 72.3ZM22.5 66.8C22.5 66.6 22.2 66.2 22 65.8C20.9 63.7 20.2 61.8 19.8 60.3C19.8 60.2 19.8 59.9 19.7 59.7C19.7 59.5 19.6 59 19.5 58.6C19.5 58.3 19.4 57.7 19.4 57.5C19.3 57.1 19.3 56.8 19.3 55.6C19.4 53.5 19.6 52.1 20.2 49.8C20.2 49.7 20.4 49.2 20.5 48.8C21.1 47.2 21.1 47.4 22 45.4C22.6 44.2 24.1 41.9 25 40.9C25.1 40.7 25.4 40.4 25.6 40.2L25.9 39.9L26.6 39.8C27.8 39.8 28.3 39.9 28.8 40.3C29 40.5 29.1 40.7 29.3 41.2C29.4 41.5 29.4 41.5 29.4 43.7C29.4 45.9 29.3 46.3 29.1 47.1C29.1 47.2 29.1 47.4 29 47.5C28.8 48.2 28.2 49.8 27.9 50.1C27.9 50.2 27.8 50.3 27.8 50.4C27.7 50.6 27.5 50.9 27.3 51.2C27.1 51.5 26.8 52.1 26.5 52.6C26.2 53 25.9 53.5 25.9 53.5C25.8 53.7 25.7 53.8 25.5 54.2C25.3 54.7 25.1 54.9 24.9 55.2C24.6 55.8 24.1 56.9 24 57.3C24 57.3 23.9 57.5 23.9 57.6C23.4 58.9 22.8 61.3 22.8 62.1C22.8 62.2 22.8 62.5 22.7 62.8C22.6 63.5 22.6 65.2 22.7 66.1C22.8 67 22.8 67.1 22.7 67.1C22.7 67.1 22.6 66.9 22.5 66.8ZM77.2 66.9C77.2 66.9 77.2 66.5 77.2 66.1C77.3 65.2 77.3 63.5 77.2 62.8C77.2 62.5 77.2 62.2 77.2 62.1C77.2 61.3 76.6 58.9 76.1 57.6C76 57.5 76 57.3 76 57.3C75.8 56.9 75.3 55.8 75 55.2C74.9 54.9 74.7 54.6 74.5 54.2C74.2 53.8 74.2 53.7 74.1 53.5C74 53.5 73.8 53 73.5 52.6C73.2 52.1 72.8 51.5 72.6 51.2C72.5 50.9 72.3 50.6 72.2 50.4C72.1 50.3 72 50.2 72 50.1C71.8 49.8 71.1 48.2 70.9 47.5C70.9 47.4 70.8 47.2 70.8 47.1C70.6 46.3 70.6 45.9 70.6 43.7C70.6 41.5 70.6 41.5 70.7 41.2C70.8 40.7 70.9 40.5 71.2 40.3C71.7 39.9 72.1 39.8 73.4 39.8L74 39.9L74.4 40.2C74.5 40.4 74.8 40.7 75 40.9C75.8 41.9 77.3 44.2 77.9 45.4C78.9 47.4 78.8 47.2 79.4 48.8C79.6 49.2 79.7 49.7 79.8 49.9C80 50.5 80 50.6 80.1 51.1C80.3 51.8 80.4 52.7 80.5 53.7C80.7 54.6 80.7 56.9 80.6 57.5C80.5 57.7 80.5 58.3 80.4 58.6C80.4 59 80.3 59.5 80.2 59.7C80.2 59.9 80.1 60.2 80.1 60.3C79.8 61.8 79 63.7 78 65.8C77.7 66.2 77.5 66.6 77.4 66.8C77.3 67.1 77.2 67.1 77.2 66.9ZM44.9 45.9C44.9 43.8 44.6 42.6 43.8 41.5C43.5 41.2 43.4 41.1 42.4 41.1C40.5 41 39.7 40.5 37.7 38.2C37.4 37.9 37.1 37.6 37 37.5C37 37.5 36.9 37.4 36.9 37.4C36.9 37.3 37.9 37.3 38.8 37.4C39.2 37.4 39.8 37.4 40.3 37.5C42.5 37.6 43.7 37.9 44.5 38.7C44.8 39 45 39.2 45.2 39.6C45.8 40.8 46 43.1 45.6 44.8C45.5 45.1 45.5 45.4 45.5 45.4C45.5 45.5 45.4 45.7 45.3 46.0C45 46.7 45 46.7 45 46.8C44.9 46.8 44.9 46.8 44.9 45.9ZM55 46.8C54.9 46.6 54.5 45.6 54.5 45.4C54.5 45.4 54.4 45.1 54.4 44.8C54 43.1 54.1 40.8 54.8 39.6C55 39.2 55.1 39 55.4 38.7C56.3 37.9 57.5 37.6 59.6 37.5C60.1 37.4 60.8 37.4 61.1 37.4C62 37.3 63 37.3 63 37.4C63 37.4 63 37.5 62.9 37.5C62.9 37.6 62.6 37.9 62.3 38.2C60.2 40.5 59.5 41 57.5 41.1C56.6 41.1 56.5 41.2 56.2 41.5C55.4 42.6 55.1 43.8 55.1 45.8C55.1 46.4 55.1 46.8 55.1 46.8C55.1 46.8 55 46.8 55 46.8ZM18.7 46.3C18.7 45.1 18.9 43.7 19 42.8C19.3 41.2 19.9 39.2 20.4 38.1C20.5 37.8 20.6 37.5 20.6 37.5C20.6 37.4 21.4 36 21.6 35.6C21.7 35.6 21.7 35.5 21.7 35.5C21.7 35.4 21.8 35.3 21.8 35.2C21.9 35.1 22 35 22 34.9C22.2 34.6 22.6 34 22.8 33.8C23 33.6 23.3 33.3 23.5 33.0C23.7 32.7 24 32.3 24.1 32.2C24.4 31.9 25.6 30.8 26.1 30.4C26.2 30.2 26.5 30 26.6 29.9C26.8 29.7 28.2 28.9 28.3 28.9C28.3 28.9 28.5 28.8 28.6 28.7C29.1 28.4 30.2 27.9 30.7 27.8C31.2 27.7 31.4 27.6 31.7 27.5C32 27.5 32.4 27.4 32.6 27.3C32.8 27.3 33.1 27.2 33.3 27.2C33.8 27.1 36 27.1 36.7 27.2C37.4 27.3 38.2 27.4 38.4 27.5C38.8 27.6 39.4 27.8 39.5 27.8C39.7 27.8 39.7 27.9 39.5 28.0C39.4 28 39.3 28.1 39.2 28.1C39.1 28.2 38.6 28.4 38.1 28.6C37.6 28.8 37.1 29 36.8 29.1C35.7 29.8 35.6 29.8 35.4 29.9C34.5 30.5 33.3 31.4 32.2 32.3C31.5 32.9 31.4 33 30.7 33.6C30.1 34 28.7 35 27.6 35.6C26.9 36 26.9 36.1 26.8 36.1C26.8 36.1 26.6 36.3 26.3 36.4C26.1 36.6 25.7 36.9 25.4 37.1C23.4 38.5 21.8 40.4 20.4 42.9C19.9 43.9 19.1 45.6 18.9 46.1C18.8 46.4 18.7 46.5 18.7 46.3ZM81.1 46.3C81.1 46.3 81.1 46.3 81.1 46.2C81.1 46 80.3 44.4 79.9 43.5C79.2 42.2 79.2 42.3 78.7 41.6C77.6 39.8 76.2 38.3 74.5 37.1C74.2 36.9 73.8 36.6 73.6 36.4C73.4 36.3 73.2 36.1 73.1 36.1C73.1 36.1 73 36 72.3 35.6C71.7 35.3 71.6 35.2 70.4 34.4C69.7 33.9 69.4 33.7 67.8 32.3C66.7 31.4 65.5 30.5 64.5 29.9C64.4 29.8 64.3 29.8 63.1 29.1C62.9 29 62.3 28.8 61.8 28.6C61.3 28.4 60.9 28.2 60.8 28.1C60.7 28.1 60.5 28 60.5 28.0C60.3 27.9 60.3 27.8 60.4 27.8C60.5 27.8 61.1 27.6 61.5 27.5C61.8 27.4 62.6 27.3 63.2 27.2C64 27.1 66.1 27.1 66.7 27.2C66.8 27.2 67.1 27.3 67.4 27.3C67.6 27.4 68 27.5 68.2 27.5C68.6 27.6 68.8 27.7 69.2 27.8C69.8 27.9 70.9 28.4 71.3 28.7C71.5 28.8 71.6 28.9 71.7 28.9C71.7 28.9 73.1 29.7 73.3 29.9C73.5 30 73.7 30.2 73.9 30.4C74.4 30.8 75.6 31.9 75.8 32.2C76 32.3 76.3 32.7 76.5 33.0C76.7 33.3 77 33.6 77.1 33.8C77.3 34 77.7 34.6 77.9 34.9C78 35.1 78.1 35.3 78.3 35.5C78.3 35.6 78.3 35.6 78.4 35.7C78.4 35.7 78.5 35.9 78.6 36.0C78.7 36.2 79.3 37.5 79.3 37.5C79.3 37.5 79.4 37.8 79.6 38.1C80.1 39.2 80.7 41.2 80.9 42.8C81.1 43.7 81.2 45.1 81.2 46.2C81.2 46.4 81.2 46.4 81.1 46.3ZM49 30.2C48.6 29.7 47.2 28.7 46.2 28.1C45.3 27.5 43.7 26.9 42.4 26.7C42 26.6 39.2 25.9 39.1 25.9C39 25.8 37.5 25.5 36.4 25.4C34.4 25.1 32 25.1 30.3 25.4C29.2 25.7 28.9 25.8 28.4 26.0C28.4 26 28.1 26.1 27.8 26.2C27.3 26.4 27 26.6 25.9 27.1C25.3 27.5 24.5 28 23.8 28.5C23.6 28.7 23.4 28.8 23.4 28.8C23.3 28.8 23.4 28.6 23.5 28.5C23.6 28.3 23.7 28.1 23.7 28.0C23.9 27.7 24.3 27 24.4 26.8C24.5 26.7 24.5 26.6 24.5 26.6C24.5 26.6 25.4 25.3 25.8 24.8C27.2 23 29.5 21.3 31.3 20.8C32.1 20.5 32.7 20.4 33.4 20.2C34.1 20.1 36.1 20.1 36.7 20.2C39 20.7 40.5 21.2 42.4 22.3C43.1 22.6 44.3 23.4 44.7 23.8C45.2 24.2 46.3 25.4 46.6 25.8C46.7 25.9 47 26.1 47.1 26.3C47.3 26.5 47.6 26.9 47.8 27.2C48 27.5 48.1 27.8 48.2 27.9C48.2 27.9 48.3 28.1 48.4 28.3C48.5 28.5 48.7 28.9 48.8 29.1C49 29.6 49.3 30.3 49.3 30.4C49.3 30.4 49.2 30.4 49 30.2ZM50.6 30.4C50.6 30.3 50.9 29.6 51.2 29.1C51.3 28.9 51.5 28.5 51.5 28.3C51.6 28.1 51.7 27.9 51.8 27.9C51.8 27.8 52 27.5 52.2 27.2C52.4 26.9 52.7 26.5 52.8 26.3C53 26.1 53.2 25.9 53.3 25.8C53.6 25.4 54.8 24.2 55.2 23.8C55.7 23.4 56.9 22.6 57.5 22.3C59.4 21.2 60.9 20.7 63.3 20.2C63.9 20.1 65.8 20.1 66.5 20.2C67.2 20.4 67.8 20.5 68.7 20.8C70.4 21.3 72.7 23 74.1 24.8C74.5 25.3 75.4 26.6 75.4 26.6C75.4 26.6 75.5 26.7 75.5 26.8C75.7 27 76 27.7 76.2 28.0C76.3 28.1 76.4 28.3 76.5 28.5C76.6 28.6 76.6 28.8 76.6 28.8C76.6 28.8 76.4 28.7 76.2 28.5C75.5 28 74.7 27.5 74 27.1C72.9 26.6 72.6 26.4 72.2 26.2C71.9 26.1 71.6 26 71.5 26.0C71.1 25.8 70.7 25.7 69.6 25.4C67.9 25.1 65.6 25.1 63.5 25.4C62.5 25.5 60.9 25.8 60.8 25.9C60.8 25.9 58 26.6 57.5 26.7C56.2 26.9 54.7 27.5 53.7 28.1C52.8 28.7 51.4 29.7 50.9 30.2C50.7 30.4 50.6 30.4 50.6 30.4ZM49.8 28.7C49.8 28.6 49.8 28.5 49.7 28.3C49.5 27.6 48.7 25.9 48.4 25.4C48.3 25.2 48 24.9 47.9 24.6C47.3 23.6 46.4 22.7 45.4 21.8C45.1 21.5 44.4 21 44.4 21.0C44.4 21 44.3 20.9 44.2 20.9C43.3 20.2 42.3 19.7 41.3 19.4C39 18.6 37.4 18.4 34.1 18.5C33.1 18.5 32.3 18.5 32.3 18.5C32.2 18.5 33.2 18 33.6 17.8C33.8 17.8 34 17.7 34.2 17.6C34.4 17.5 34.7 17.4 34.9 17.3C35.1 17.3 35.5 17.1 35.7 17.1C35.9 17 36.3 16.9 36.5 16.8C36.9 16.7 38.1 16.3 38.4 16.2C38.4 16.1 38.8 16 39.2 15.9C39.5 15.8 40.1 15.6 40.4 15.5C40.9 15.3 41 15.2 41.3 15.1C41.6 15 41.9 14.9 42.2 14.8C42.4 14.7 42.7 14.6 42.8 14.6C42.9 14.5 43 14.5 43.1 14.4C43.2 14.4 43.5 14.3 43.7 14.2C43.8 14.1 44.2 13.9 44.5 13.8C45.1 13.6 45.9 13.2 46.4 12.9C46.4 12.8 46.5 12.8 46.5 12.8C46.6 12.7 46.7 12.7 46.7 12.6C46.8 12.6 47 12.5 47.1 12.4C47.8 12 48.9 10.9 49.5 10.2C49.6 10.1 49.7 10 49.7 10.0C49.7 9.9 49.8 10 49.8 10.1L50 10.2L50.1 10.1C50.2 10 50.3 9.9 50.3 10.0C50.3 10 50.4 10.1 50.5 10.2C51 10.9 52.2 12 52.8 12.4C53 12.5 53.2 12.6 53.2 12.6C53.3 12.7 53.4 12.7 53.4 12.8C53.5 12.8 53.6 12.8 53.6 12.9C54.1 13.2 54.8 13.6 55.5 13.8C55.7 13.9 56.1 14.1 56.3 14.2C56.5 14.3 56.7 14.4 56.8 14.4C56.9 14.5 57.1 14.5 57.2 14.6C57.3 14.6 57.5 14.7 57.7 14.8C58 14.9 58.4 15 58.7 15.1C58.9 15.2 59.1 15.3 59.6 15.5C59.9 15.6 60.4 15.8 60.8 15.9C61.1 16 61.5 16.1 61.6 16.2C61.8 16.3 63 16.7 63.5 16.8C63.7 16.9 64.1 17 64.3 17.1C64.5 17.1 64.8 17.3 65 17.3C65.2 17.4 65.6 17.5 65.7 17.6C65.9 17.7 66.2 17.8 66.3 17.8C66.8 18 67.7 18.5 67.7 18.5C67.7 18.5 66.8 18.5 65.8 18.5C62.5 18.4 60.9 18.6 58.7 19.4C57.7 19.7 56.7 20.2 55.7 20.9C55.7 20.9 55.6 21 55.6 21.0C55.5 21 54.9 21.5 54.5 21.8C53.5 22.7 52.7 23.6 52.1 24.6C51.9 24.9 51.7 25.2 51.6 25.4C51.2 25.9 50.4 27.6 50.2 28.3C50.1 28.7 50.1 28.7 50 28.8C49.9 28.8 49.9 28.7 49.8 28.7Z";
+  var LOGO_FYLD = ["M40.2 91.5C40 89 40.4 86.9 41.5 84.9C42 83.8 42.3 83.3 43.5 82.1C43.9 81.7 43.9 81.7 44 81.7C44.1 81.7 44.4 81.7 44.7 81.8C45.9 82 46.8 82.1 48.1 82.5C48.7 82.6 49.2 82.8 49.2 82.8C49.2 82.8 49.2 82.8 48.7 83.0C47.9 83.3 47.3 83.6 46.8 84.0C46.7 84.1 46.4 84.2 46.2 84.4C45.4 84.9 44.2 85.9 43.6 86.6C42.2 88.2 41.2 89.6 40.5 91.3C40.4 91.7 40.3 91.9 40.2 91.9C40.2 92 40.2 91.8 40.2 91.5ZM63 81.5C62.5 81.5 62.3 81.5 62.3 81.4C62.3 81.4 62.3 81.3 62.4 81.3C62.4 81.3 62.7 81.2 62.9 81.0C63.1 80.9 63.4 80.7 63.5 80.7C63.8 80.5 64.3 80.2 64.6 79.9C64.9 79.7 65.9 78.8 66 78.5C66.2 78.2 66.3 77.8 66.5 77.2L66.6 76.6L66.6 73.3C66.6 67.6 66.5 40.7 66.5 40.2C66.4 39.5 66.3 38.9 66 38.0C65.6 36.9 65.2 36 63.7 33.8C63.5 33.4 63.2 33 63.1 32.8C63 32.6 62.9 32.4 62.9 32.4C62.8 32.4 62.8 32.2 62.7 32.1C62.6 32 62.5 31.7 62.4 31.6C62.2 31.2 61.8 30.5 61.8 30.5C61.9 30.4 63.3 31 64.1 31.5C64.2 31.6 64.4 31.7 64.4 31.7C64.4 31.7 65.3 32.3 65.7 32.6C66.4 33.1 66.6 33.3 67.5 34.1C68.1 34.5 68.5 34.9 68.6 35.0C68.7 35.1 69 35.3 69.2 35.5C69.5 35.7 69.8 36.1 70.1 36.2C70.4 36.6 71 37.1 71.5 37.6C71.7 37.7 72 38 72.2 38.1C72.4 38.3 72.6 38.6 72.8 38.7C72.9 38.8 73.1 39 73.2 39.1C73.6 39.4 73.6 39.4 72.6 39.4C71.1 39.4 70.7 39.6 70.2 40.4C70 41 70 40.4 70 50.6C70 70.9 70 74.8 70.1 76.0C70.2 76.6 70.4 77.4 70.6 77.9C71.1 79.2 72.4 80.4 74 81.2C74.5 81.5 74.4 81.5 73.2 81.5C72.7 81.5 70.3 81.5 68 81.5C65.7 81.5 63.4 81.5 63 81.5ZM56.2 81.0C56 80.9 55.7 80.7 55.5 80.5C55.2 80.3 54.9 80.1 54.7 80.0C54.3 79.7 53.6 79.2 53 78.9C52.5 78.7 51.8 78.4 51.7 78.4C51.7 78.4 51.5 78.3 51.2 78.2C51 78.1 50.8 78 50.8 78.0C50.7 78 50.7 77.9 50.8 77.8C51 77.8 51.1 77.8 51.6 77.6C51.8 77.5 52.1 77.4 52.4 77.3C53 77 53.5 76.9 53.7 76.8C53.9 76.7 54 76.6 54.1 76.6C54.2 76.6 54.3 76.5 54.5 76.5C54.6 76.4 54.9 76.3 55.3 76.1C56.5 75.6 58.2 74.7 59.1 74.1C60 73.5 60.6 73 61.4 72.2C62.7 70.9 63.4 69.9 64.4 68.0C64.6 67.6 64.8 67.2 64.8 67.2C64.9 67.2 65 69.5 65 71.7C65 74.3 64.9 74.9 64.5 76.0C64.1 77.1 62.9 78.5 61.9 79.2C61.8 79.3 61.5 79.4 61.4 79.5C61.2 79.6 61.1 79.7 61 79.7C61 79.7 60.9 79.8 60.8 79.8C60.4 80.1 59.4 80.5 58.6 80.7C57.9 80.9 57.6 81 56.8 81.1C56.7 81.1 56.5 81.1 56.5 81.2C56.4 81.2 56.3 81.1 56.2 81.0ZM71.2 74.9C71.2 74.7 71.2 73.2 71.1 69.6C71.1 67.1 71.1 63.4 71 61.3C71 55.6 71 52.2 71 52.2C71 52.2 71.1 52.3 71.2 52.5C71.3 52.6 71.5 52.9 71.6 53.1C71.9 53.4 72.5 54.4 72.5 54.4C72.5 54.4 72.6 54.7 72.8 55.0C73.1 55.5 73.5 56.3 73.5 56.4C73.5 56.4 73.8 57 74 57.5C74.2 57.7 74.3 58 74.4 58.2C75.4 60.9 75.8 62.9 75.8 65.3C75.8 66.9 75.6 68.2 75.1 69.6C74.8 70.5 73.9 72.1 73.1 73.1C72.4 73.9 71.2 75 71.2 74.9Z", "M59.6 91.8C59.6 91.7 59.4 91.4 59.3 91.1C59.1 90.6 58.9 90.2 58.6 89.7C58 88.6 57.3 87.6 56.4 86.6C55.8 85.9 54.5 84.9 53.8 84.4C53.6 84.2 53.3 84.1 53.2 84.0C52.6 83.6 52 83.3 51.3 83.0C51 82.9 50.5 82.7 50.3 82.6C49.7 82.4 49.5 82.3 48.3 82.0C47 81.7 46.3 81.6 45.1 81.4C44.8 81.3 44.4 81.3 44.1 81.2C42.5 81 41.8 80.9 40.7 80.5C40.2 80.3 39.4 80 39.1 79.8C39 79.8 38.9 79.7 38.9 79.7C38.9 79.7 38.7 79.6 38.6 79.5C38.4 79.4 38.2 79.3 38 79.2C37 78.5 35.9 77.1 35.5 76.0C35.1 74.9 35 74.3 35 71.7C35 69.5 35.1 67.2 35.2 67.2C35.2 67.2 35.4 67.6 35.6 68.0C36.5 69.9 37.2 70.9 38.5 72.2C39.4 73 40 73.5 40.8 74.1C41.8 74.7 43.5 75.6 44.7 76.1C45 76.3 45.4 76.4 45.5 76.5C45.6 76.5 45.8 76.6 45.9 76.6C45.9 76.6 46.1 76.7 46.2 76.8C46.5 76.9 46.9 77 47.6 77.3C47.8 77.4 48.2 77.5 48.4 77.6C48.7 77.7 48.7 77.7 49.6 78.0C50.2 78.3 50.4 78.4 50.9 78.6C51.1 78.7 51.3 78.8 51.3 78.8C51.4 78.8 52.1 79.1 52.6 79.3C53.5 79.8 54.2 80.2 55.6 81.3C56.2 81.7 57.3 83 57.9 83.9C58.3 84.4 58.9 85.7 59.1 86.3C59.7 88 59.9 89.6 59.8 91.5C59.8 92 59.7 92 59.6 91.8ZM26.7 81.5C25.5 81.5 25.5 81.5 26 81.2C27.5 80.4 28.8 79.2 29.3 77.9C29.5 77.4 29.7 76.6 29.8 76.0C29.9 74.8 30 70.9 30 50.6C30 40.4 30 41 29.7 40.4C29.3 39.6 28.8 39.4 27.3 39.4C26.4 39.4 26.4 39.4 26.7 39.1C26.8 39 27 38.8 27.2 38.7C27.3 38.6 27.6 38.3 27.8 38.1C28 38 28.3 37.7 28.4 37.6C28.9 37.1 29.5 36.6 29.9 36.2C30.1 36.1 30.5 35.7 30.7 35.5C31 35.3 31.2 35.1 31.3 35.0C31.4 34.9 31.9 34.5 32.4 34.1C33.4 33.3 33.6 33.1 34.3 32.6C34.7 32.3 35.5 31.7 35.6 31.7C35.6 31.7 35.7 31.6 35.9 31.5C36.7 31 38 30.4 38.1 30.5C38.2 30.5 37.8 31.2 37.6 31.6C37.5 31.7 37.3 32 37.3 32.1C37.2 32.2 37.1 32.4 37.1 32.4C37.1 32.4 37 32.6 36.9 32.8C36.8 33 36.5 33.4 36.2 33.8C34.8 36 34.3 36.9 33.9 38.0C33.7 38.9 33.5 39.5 33.5 40.2C33.4 40.7 33.3 67.6 33.4 73.3L33.4 76.6L33.5 77.2C33.6 77.8 33.8 78.2 33.9 78.5C34.1 78.8 35 79.7 35.3 79.9C35.7 80.2 36.1 80.5 36.4 80.7C36.6 80.7 36.9 80.9 37.1 81.0C37.3 81.2 37.5 81.3 37.6 81.3C37.7 81.4 37.7 81.4 37.6 81.5C37.6 81.5 28.6 81.5 26.7 81.5ZM28.2 74.5C27.3 73.7 26.7 73 26.1 72.0C24.7 69.9 24.2 68 24.2 65.3C24.2 62.9 24.5 60.9 25.6 58.2C25.7 58 25.8 57.7 25.9 57.5C26.2 57 26.4 56.4 26.4 56.4C26.4 56.3 26.8 55.5 27.1 55.0C27.3 54.7 27.5 54.4 27.5 54.4C27.5 54.4 28.1 53.4 28.3 53.1C28.4 52.9 28.6 52.6 28.7 52.5C28.8 52.3 28.9 52.2 28.9 52.2C29 52.2 29 55.6 28.9 61.3C28.9 63.4 28.9 67.1 28.8 69.6C28.8 74.5 28.8 74.8 28.7 74.9C28.7 74.9 28.5 74.7 28.2 74.5Z"];
+  var INF_L = 1e20;                   // "uendelig" afstand
+
+  // Tegner løven og regner for hver pixel afstanden til nærmeste kant ud.
+  // Grafikkortet bruger feltet til at forme løven i 3D.
+  function logoFelt(n) {
+    var c = document.createElement("canvas");
+    c.width = c.height = n;
+    var x = c.getContext("2d", { willReadFrequently: true }); // tegnes i hukommelsen, så den hurtigt kan læses
+    var k = n / 2 / 46;                 // logoets viewBox (7..93) fylder lidt mindre end feltet
+    x.setTransform(k, 0, 0, k, n / 2 - 50 * k, n / 2 - 50 * k);
+    x.fillStyle = x.strokeStyle = "#fff";
+    x.lineWidth = 1.15; x.lineJoin = "round"; x.lineCap = "round";
+    x.stroke(new Path2D(LOGO_STREG));
+    LOGO_FYLD.forEach(function (d) { x.fill(new Path2D(d)); });
+    var a = x.getImageData(0, 0, n, n).data;
+
+    var N = n * n, ude = new Float32Array(N), inde = new Float32Array(N), fyldt = 0, i, al, e;
+    for (i = 0; i < N; i++) {
+      al = a[i * 4 + 3] / 255;            // kantpixels tæller med en brøkdel, så kanten bliver præcis
+      e = 0.5 - al;
+      ude[i] = al >= 1 ? 0 : al <= 0 ? INF_L : e > 0 ? e * e : 0;
+      inde[i] = al >= 1 ? INF_L : al <= 0 ? 0 : e < 0 ? e * e : 0;
+      fyldt += al;
+    }
+    // Blokerer browseren for at læse tegningen (fx af hensyn til sporing), vises baggrunden uden 3D
+    if (fyldt < N * 0.03 || fyldt > N * 0.6) throw new Error("logo");
+    afstand(ude, n); afstand(inde, n);
+
+    // Afstanden i pixels, udglattet en smule, så kanten ikke får små trappetrin
+    var d = new Float32Array(N), t = new Float32Array(N);
+    for (i = 0; i < N; i++) d[i] = Math.sqrt(ude[i]) - Math.sqrt(inde[i]);
+    glat(d, t, n, 1); glat(t, d, n, n); glat(d, t, n, 1); glat(t, d, n, n);
+
+    // To kanaler: en grov til afstande langt fra løven og en fin tæt på kanten
+    // (Uint8ClampedArray runder og holder selv værdierne mellem 0 og 255)
+    var ud = new Uint8ClampedArray(N * 2), grov = 255 * 2 / n / 0.25, fin = 255 * 2 / n / 0.04;
+    for (i = 0; i < N; i++) {
+      ud[i * 2] = 127.5 + d[i] * grov;
+      ud[i * 2 + 1] = 127.5 + d[i] * fin;
+    }
+    return ud;
+  }
+
+  // Udglatning langs én retning (trin 1 = vandret, trin n = lodret) med vægtene 1-4-6-4-1
+  function glat(fra, til, n, trin) {
+    var lodret = trin !== 1;
+    for (var r = 0; r < n; r++) {
+      var base = lodret ? r : r * n;
+      for (var j = 0; j < n; j++) {
+        var i = base + j * trin;
+        var m2 = j > 1 ? i - 2 * trin : base, m1 = j > 0 ? i - trin : base;
+        var p1 = j < n - 1 ? i + trin : i, p2 = j < n - 2 ? i + 2 * trin : p1;
+        til[i] = (fra[m2] + 4 * fra[m1] + 6 * fra[i] + 4 * fra[p1] + fra[p2]) / 16;
+      }
+    }
+  }
+
+  // Afstand til nærmeste fyldte pixel (Felzenszwalb og Huttenlocher), først lodret, så vandret
+  function afstand(g, n) {
+    var f = new Float32Array(n), d = new Float32Array(n), v = new Int32Array(n), z = new Float32Array(n + 1), x, y;
+    for (x = 0; x < n; x++) { for (y = 0; y < n; y++) f[y] = g[y * n + x]; linje(f, d, v, z, n); for (y = 0; y < n; y++) g[y * n + x] = d[y]; }
+    for (y = 0; y < n; y++) { for (x = 0; x < n; x++) f[x] = g[y * n + x]; linje(f, d, v, z, n); for (x = 0; x < n; x++) g[y * n + x] = d[x]; }
+  }
+  function linje(f, d, v, z, n) {
+    var k = 0, q, s, r;
+    v[0] = 0; z[0] = -INF_L; z[1] = INF_L;
+    for (q = 1; q < n; q++) {
+      do { r = v[k]; s = (f[q] + q * q - f[r] - r * r) / (2 * q - 2 * r); } while (s <= z[k] && --k >= 0);
+      k++; v[k] = q; z[k] = s; z[k + 1] = INF_L;
+    }
+    for (k = 0, q = 0; q < n; q++) { while (z[k + 1] < q) k++; r = q - v[k]; d[q] = r * r + f[v[k]]; }
+  }
+
+  var logoTex = null, logoN = 0;
+  function logoTekstur() {
+    var n = logoN = lille ? 256 : 384;   // feltets opløsning: mindre på mobil, hvor løven er mindre
+    var data = logoFelt(n);
+    var t = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE_ALPHA, n, n, 0, gl.LUMINANCE_ALPHA, gl.UNSIGNED_BYTE, data);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    return t;
+  }
+
   /* ---------- Opsætning ---------- */
 
   var lille = window.matchMedia("(max-width: 760px)").matches;
@@ -245,7 +342,8 @@
   function init() {
     sceneProg = program(VERT_SCENE, FRAG_SCENE);
     sparkProg = program(VERT_SPARK, FRAG_SPARK);
-    uS = uniforms(sceneProg, ["uRes", "uTime", "uMouse", "uCenter", "uScale", "uDim", "uFlow", "uDrop", "uLight", "uBand", "uOrb0", "uOrb1", "uOrb2"]);
+    uS = uniforms(sceneProg, ["uRes", "uTime", "uMouse", "uCenter", "uScale", "uDim", "uFlow", "uLight", "uDrej", "uLogo", "uLogoN"]);
+    logoTex = logoTekstur();
     uP = uniforms(sparkProg, ["uTime", "uRes", "uMouse", "uFocus", "uPx", "uAmount"]);
     aPos = gl.getAttribLocation(sceneProg, "aPos");
     aSeed = gl.getAttribLocation(sparkProg, "aSeed");
@@ -288,7 +386,7 @@
   // Markøren: mål og blødt fulgt værdi. Uden mus svæver den af sig selv.
   var mus = { x: 0, y: 0, sidst: -1e9 };
   var m = { x: svaevX(tid), y: svaevY(tid) };
-  var cur = { cx: 0, cy: 0, sc: 1, dim: 1, flow: 1, spin: 0 };
+  var cur = { cx: 0, cy: 0, sc: 1, dim: 1, flow: 1, scroll: 0 };
   var forste = true;
   var holdTil = 0, glidTil = 0;
 
@@ -367,21 +465,19 @@
     m.x += (tx - m.x) * b;
     m.y += (ty - m.y) * b;
 
-    cur.spin = tid * 0.12 + mal.s * 1.6;
+    cur.scroll = mal.s;
     return mal;
   }
 
-  // Drejningen af båndet samles i én matrix, så grafikkortet slipper for at regne den pr. pixel
+  // Løven drejer sig mod markøren og svajer roligt. Drejningen samles i én matrix,
+  // så grafikkortet slipper for at regne den pr. pixel.
   var M = new Float32Array(9);
-  function drej(a, x, y) { var c = Math.cos(a), s = Math.sin(a); return [c * x + s * y, -s * x + c * y]; }
-  function baandMatrix(a1, a2, a3) {
-    for (var k = 0; k < 3; k++) {
-      var x = k === 0 ? 1 : 0, y = k === 1 ? 1 : 0, z = k === 2 ? 1 : 0, q;
-      q = drej(a1, y, z); y = q[0]; z = q[1];
-      q = drej(a2, x, y); x = q[0]; y = q[1];
-      q = drej(a3, x, z); x = q[0]; z = q[1];
-      M[k * 3] = x; M[k * 3 + 1] = y; M[k * 3 + 2] = z;
-    }
+  function drejMatrix(ay, ax) {
+    var c1 = Math.cos(ay), s1 = Math.sin(ay), c2 = Math.cos(ax), s2 = Math.sin(ax);
+    // Først om den lodrette akse (ay), så om den vandrette (ax). Gemmes kolonne for kolonne.
+    M[0] = c1;  M[3] = 0;   M[6] = s1;
+    M[1] = -s2 * s1; M[4] = c2; M[7] = s2 * c1;
+    M[2] = -c2 * s1; M[5] = -s2; M[8] = c2 * c1;
     return M;
   }
 
@@ -392,10 +488,11 @@
     var aspect = mal.aspect;
     var mux = m.x * 0.5 * aspect, muy = m.y * 0.5;           // markør i skærmkoordinater
     var mwx = m.x * mal.halvB, mwy = m.y * mal.halvH;          // markør i verden
-    var dx = (mwx - cur.cx) / cur.sc, dy = (mwy - cur.cy) / cur.sc, dz = 0.9;
-    var len = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
-    var naer = Math.min(Math.sqrt(dx * dx + dy * dy), 3) / 3;
-    var rk = 0.8 + 0.34 * naer;
+    // Løven vender sig mod markøren, men aldrig så meget, at den ses fra kanten.
+    // Den svajer roligt, når bevægelse er tilladt, og drejer lidt, når man scroller.
+    var ox = (mwx - cur.cx) / mal.halvB, oy = (mwy - cur.cy) / mal.halvH, sv = rolig ? 0 : 1;
+    var ay = Math.atan(ox * 1.2) * 0.5 + sv * 0.2 * Math.sin(tid * 0.33) + Math.min(cur.scroll, 2) * 0.3;
+    var ax = -Math.atan(oy * 1.2) * 0.4 + sv * 0.1 * Math.sin(tid * 0.27 + 1);
     var lx = m.x * 1.3, ly = 0.55 + m.y * 0.6, lz = 0.85;
     var ll = Math.sqrt(lx * lx + ly * ly + lz * lz);
 
@@ -411,14 +508,12 @@
     gl.uniform1f(uS.uScale, cur.sc);
     gl.uniform1f(uS.uDim, cur.dim);
     gl.uniform1f(uS.uFlow, cur.flow);
-    gl.uniform3f(uS.uDrop, dx / len * rk, dy / len * rk, dz / len * rk);
     gl.uniform3f(uS.uLight, lx / ll, ly / ll, lz / ll);
-    gl.uniformMatrix3fv(uS.uBand, false, baandMatrix(m.y * 0.45 + 0.5, m.x * 0.36 - 0.35, cur.spin));
-    for (var i = 0; i < 3; i++) {
-      var ang = tid * (0.45 + 0.12 * i) + i * 2.1;
-      var rad = 0.74 + 0.16 * Math.sin(tid * 0.6 + i * 1.7);
-      gl.uniform4f(uS["uOrb" + i], Math.cos(ang) * rad, Math.sin(ang * 1.3 + i) * 0.32, Math.sin(ang) * rad, 0.075 + 0.025 * i);
-    }
+    gl.uniformMatrix3fv(uS.uDrej, false, drejMatrix(ay, ax));
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, logoTex);
+    gl.uniform1i(uS.uLogo, 0);
+    gl.uniform1f(uS.uLogoN, logoN);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.disableVertexAttribArray(aPos);
 
