@@ -120,7 +120,7 @@ Tjekket er en hjælp, ikke juridisk rådgivning.
 
 ## Design og 3D-baggrund
 
-Siden har et mørkt luksustema i guld og orange. Bag indholdet kører en 3D-baggrund: en skulptur af flydende guld med et snoet bånd og dråber, gnister og glødende lysstrømme. Den følger musen, ligger stille for besøgende, der har slået animationer fra på deres enhed, og kan stoppes med pauseknappen i menulinjen. Baggrunden tegnes direkte i browseren (`assets/js/scene.js`) uden eksterne biblioteker, så der stadig ikke sendes data til tredjepart. Kan en browser ikke vise 3D, ser den en rolig guld/orange gradient i stedet. Når man skifter side, glider indholdet blødt ud og ind, mens menulinjen og 3D-baggrunden bliver stående (`assets/js/sideskift.js`). Det sker ikke for besøgende, der har slået animationer fra.
+Siden har et mørkt luksustema i guld og orange. Bag indholdet kører en 3D-baggrund: løven fra logoet i poleret guld, gnister og glødende lysstrømme. Løven drejer sig mod musen, ligger stille for besøgende, der har slået animationer fra på deres enhed, og kan stoppes med pauseknappen i menulinjen. Baggrunden tegnes direkte i browseren (`assets/js/scene.js`) uden eksterne biblioteker, så der stadig ikke sendes data til tredjepart. Kan en browser ikke vise 3D, ser den en rolig guld/orange gradient i stedet. Når man skifter side, glider indholdet blødt ud og ind, mens menulinjen og 3D-baggrunden bliver stående (`assets/js/sideskift.js`). Det sker ikke for besøgende, der har slået animationer fra.
 
 ## Farver og skrift
 
@@ -133,4 +133,4 @@ Alle farver og gradienter ligger øverst i `assets/css/style.css`:
 
 Skrifttyper: Bodoni Moda (overskrifter) og Jost (brødtekst), begge under SIL Open Font License (se `assets/fonts`).
 
-Logoet er `assets/img/maerke.svg`: løven med to L’er (Lion og Legacy), uden ring. Alle sider henter det fra den ene fil (menu, footer, citatet på forsiden, produktpladsholdere og fejlsiden), så erstatter du filen, skifter logoet overalt. Fanebladsikonet er `favicon.svg` og `favicon-32.png` (LL-seglet), og ikonet til telefonens hjemmeskærm er `apple-touch-icon.png`. Billedet, der vises, når siden deles på sociale medier, er `deling.jpg`.
+Logoet er `assets/img/maerke.svg`: løven med to L’er (Lion og Legacy), uden ring. Alle sider henter det fra den ene fil (menu, footer, citatet på forsiden, produktpladsholdere og fejlsiden), så erstatter du filen, skifter logoet overalt. Kun guldløven i 3D-baggrunden er tegnet ud fra en kopi af logoets streger i `assets/js/scene.js` (`LOGO_STREG` og `LOGO_FYLD`), så den skal rettes dér, hvis logoet ændres. Fanebladsikonet er `favicon.svg` og `favicon-32.png` (LL-seglet), og ikonet til telefonens hjemmeskærm er `apple-touch-icon.png`. Billedet, der vises, når siden deles på sociale medier, er `deling.jpg`.
