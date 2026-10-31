@@ -38,6 +38,7 @@
     "uniform float uLogoN;",  // feltets størrelse i pixels
 
     "const float FL = 2.2;",
+    "const int STEP = 40;",
     "const vec3 RO = vec3(0.0, 0.0, 6.0);",
 
     "float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}",
@@ -56,8 +57,7 @@
     "  return mix(c3,c4,(x-0.82)/0.18);}",
 
     // Løvens omrids: afstand til logoet i planet (negativ inde i stregerne).
-    // Feltet dækker -1..1. Til lysberegningen (GLAT) læses det blødt, så guldet ikke får små riller.
-    "float GLAT=0.0;",
+    // Feltet dækker -1..1. Til lysberegningen læses det blødt (bloedt), så guldet ikke får små riller.
     "vec4 kub(float v){vec4 n=vec4(1.0,2.0,3.0,4.0)-v;vec4 s=n*n*n;",
     "  float x=s.x,y=s.y-4.0*s.x,z=s.z-4.0*s.y+6.0*s.x;return vec4(x,y,z,6.0-x-y-z)/6.0;}",
     "vec4 bloedt(vec2 uv){",
@@ -69,25 +69,25 @@
     "  vec4 a=texture2D(uLogo,o.xz),b=texture2D(uLogo,o.yz),e=texture2D(uLogo,o.xw),d=texture2D(uLogo,o.yw);",
     "  float sx=s.x/(s.x+s.y),sy=s.z/(s.z+s.w);",
     "  return mix(mix(d,e,sx),mix(b,a,sx),sy);}",
-    "float logo(vec2 q){",
-    "  vec2 uv=clamp(vec2(0.5+q.x*0.5,0.5-q.y*0.5),0.001,0.999);",
-    "  vec4 t=GLAT>0.5?bloedt(uv):texture2D(uLogo,uv);",
+    "vec2 feltUV(vec2 q){return clamp(vec2(0.5+q.x*0.5,0.5-q.y*0.5),0.001,0.999);}",
+    "float logo(vec4 t,vec2 q){",
     "  float fin=(t.a-0.5)*0.04;",
     "  float d=abs(fin)<0.0195?fin:(t.r-0.5)*0.25;",
     "  vec2 o=abs(q)-0.999;",
     "  return max(d,length(max(o,0.0)));}",
-    // Løven: logoets streger som afrundet, poleret guld, hvor en bølge af lys løber op
-    "float map(vec3 w){",
-    "  vec3 q=uDrej*((w-uCenter)/uScale);",
-    "  float S=1.12;",
+    // Løven, regnet i dens eget koordinatsystem (q): logoets streger som afrundet,
+    // poleret guld, hvor en bølge af lys løber op. l er afstanden til logoet i planet.
+    "float form(vec3 q,float l){",
     "  float flow=pow(0.5+0.5*sin(q.y*3.0-uTime*1.4),8.0);",
     "  float H=0.05+0.01*flow;",
-    "  float l=logo(q.xy/S)*S-0.016-0.006*flow;",
-    "  return (length(vec2(max(l+H,0.0),q.z))-H)*0.9*uScale;}",
+    "  l=l*1.12-0.016-0.006*flow;",
+    "  return (length(vec2(max(l+H,0.0),q.z))-H)*0.9;}",
+    "float map(vec3 q){vec2 s=q.xy/1.12;return form(q,logo(texture2D(uLogo,feltUV(s)),s));}",
+    "float mapGlat(vec3 q){vec2 s=q.xy/1.12;return form(q,logo(bloedt(feltUV(s)),s));}",
 
-    "vec3 normal(vec3 p){vec2 e=vec2(0.002,-0.002)*uScale;GLAT=1.0;",
-    "  vec3 n=normalize(e.xyy*map(p+e.xyy)+e.yyx*map(p+e.yyx)+e.yxy*map(p+e.yxy)+e.xxx*map(p+e.xxx));",
-    "  GLAT=0.0;return n;}",
+    // Fladens retning i verden (prøverne tages langs verdens akser, regnet om til løvens)
+    "vec3 normal(vec3 q){vec2 e=vec2(0.002,-0.002);",
+    "  return normalize(e.xyy*mapGlat(q+uDrej*e.xyy)+e.yyx*mapGlat(q+uDrej*e.yyx)+e.yxy*mapGlat(q+uDrej*e.yxy)+e.xxx*mapGlat(q+uDrej*e.xxx));}",
 
     // Et mørkt fotostudie med varme lyskasser, som guldet spejler
     "vec3 env(vec3 r){",
@@ -138,27 +138,34 @@
     // Ram kun pixels, hvis stråle rammer skulpturens kugle
     "  float R=1.32*uScale;",
     "  float h2=R*R-(dot(oc,oc)-tc*tc);",
-    "  if(h2>0.0&&uDim>0.01){",
-    "    float t0=max(tc-sqrt(h2),0.0),t1=tc+sqrt(h2);",
+    // Strålen regnes om til løvens eget koordinatsystem (afstande i løvens mål).
+    // Løven er flad, så strålen springer direkte frem til løvens tykkelse (|z| < 0.08)
+    // og skal kun tage få skridt. Det holder arbejdet for grafikkortet lille.
+    "  vec3 ro=uDrej*((RO-uCenter)/uScale),rl=uDrej*rd;",
+    "  float iz=1.0/(abs(rl.z)>0.001?rl.z:0.001);",
+    "  float s0=(-0.08-ro.z)*iz,s1=(0.08-ro.z)*iz;",
+    "  float a0=max(max(tc-sqrt(max(h2,0.0)),0.0)/uScale,min(s0,s1));",
+    "  float a1=min((tc+sqrt(max(h2,0.0)))/uScale,max(s0,s1));",
+    "  if(h2>0.0&&a1>a0&&uDim>0.01){",
     "    float px=1.0/(uRes.y*FL);",
-    "    float t=t0,best=1e9,bt=t0;bool hit=false;",
-    "    for(int i=0;i<90;i++){",
-    "      vec3 p=RO+rd*t;float h=map(p);",
+    "    float t=a0,best=1e9,bt=a0;bool hit=false;",
+    "    for(int i=0;i<STEP;i++){",
+    "      float h=map(ro+rl*t);",
     "      float k=h/(px*t);",
     "      if(k<best){best=k;bt=t;}",
     "      if(k<0.3){hit=true;break;}",
-    "      t+=h;if(t>t1)break;",
+    "      t+=h;if(t>a1)break;",
     "    }",
     // Bløde kanter: pixels, der næsten rammer, blandes delvist
     "    float cov=hit?1.0:1.0-smoothstep(0.3,1.5,best);",
     "    if(cov>0.0){",
     "      if(!hit)t=bt;",
-    "      vec3 p=RO+rd*t;vec3 n=normal(p);",
+    "      vec3 q=ro+rl*t,n=normal(q);",
     "      vec3 r=reflect(rd,n);",
     "      float ndv=max(dot(n,-rd),0.0);",
     "      vec3 gold=vec3(1.0,0.71,0.29);",
     "      vec3 F=gold+(1.0-gold)*pow(1.0-ndv,5.0);",
-    "      float ao=clamp(map(p+n*0.09*uScale)/(0.09*uScale),0.0,1.0);",
+    "      float ao=clamp(map(q+(uDrej*n)*0.09)/0.09,0.0,1.0);",
     "      vec3 c=env(r)*F*mix(0.35,1.0,ao);",
     "      c+=vec3(1.0,0.35,0.06)*pow(1.0-ndv,3.0)*0.35;",
     "      c+=vec3(0.9,0.3,0.05)*(1.0-ao)*0.25;",
@@ -263,7 +270,9 @@
 
     var N = n * n, ude = new Float32Array(N), inde = new Float32Array(N), fyldt = 0, i, al, e;
     for (i = 0; i < N; i++) {
-      al = a[i * 4 + 3] / 255;            // kantpixels tæller med en brøkdel, så kanten bliver præcis
+      // Kantpixels tæller med en brøkdel, så kanten bliver præcis. Den mindste støj, som
+      // nogle browsere lægger på tegningen mod sporing, tæller ikke med.
+      al = Math.min(Math.max((a[i * 4 + 3] - 3) / 249, 0), 1);
       e = 0.5 - al;
       ude[i] = al >= 1 ? 0 : al <= 0 ? INF_L : e > 0 ? e * e : 0;
       inde[i] = al >= 1 ? INF_L : al <= 0 ? 0 : e < 0 ? e * e : 0;
@@ -320,7 +329,9 @@
 
   var logoTex = null, logoN = 0;
   function logoTekstur() {
-    var n = logoN = lille ? 256 : 384;   // feltets opløsning: mindre på mobil, hvor løven er mindre
+    // Feltets opløsning: mindre på mobil, hvor løven er mindre. En potens af 2 (256, 512),
+    // som alle grafikkort håndterer ens.
+    var n = logoN = lille ? 256 : 512;
     var data = logoFelt(n);
     var t = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, t);
@@ -376,6 +387,7 @@
   var dpr = Math.min(window.devicePixelRatio || 1, 2);
   var kvalitet = lille ? 0.8 : 0.85;
   var KVAL_MIN = 0.45, KVAL_MAX = 1;
+  var kvalLoft = KVAL_MAX;            // sænkes, hvis browseren har måttet stoppe tegningen
   var W = 0, H = 0;
 
   // Tiden følger uret, så skulpturen står samme sted, når man skifter side
@@ -549,7 +561,7 @@
     }
     traege = 0;
     if (snit > 24 && kvalitet > KVAL_MIN) { kvalitet = Math.max(KVAL_MIN, kvalitet * 0.85); gode = 0; }
-    else if (snit < 18 && kvalitet < KVAL_MAX) { if (++gode >= 3) { kvalitet = Math.min(KVAL_MAX, kvalitet * 1.08); gode = 0; } }
+    else if (snit < 18 && kvalitet < kvalLoft) { if (++gode >= 3) { kvalitet = Math.min(kvalLoft, kvalitet * 1.08); gode = 0; } }
     else gode = 0;
   }
 
@@ -602,10 +614,28 @@
   if (roligMQ.addEventListener) roligMQ.addEventListener("change", skiftRolig);
   else if (roligMQ.addListener) roligMQ.addListener(skiftRolig);
 
-  canvas.addEventListener("webglcontextlost", function (e) { e.preventDefault(); if (raf) cancelAnimationFrame(raf); raf = 0; }, false);
-  canvas.addEventListener("webglcontextrestored", function () {
-    try { init(); W = H = 0; forste = true; start(); } catch (err) { canvas.remove(); }
+  // Stopper browseren 3D-tegningen (Safari gør det fx, hvis grafikkortet bruger for lang tid),
+  // starter den igen med lavere opløsning. Sker det flere gange, vises den rolige reservebaggrund.
+  var tabt = 0;
+  canvas.addEventListener("webglcontextlost", function (e) {
+    e.preventDefault();
+    if (raf) cancelAnimationFrame(raf);
+    raf = 0;
+    tabt++;
+    kvalitet = kvalLoft = Math.max(0.4, dpr * kvalitet * 0.55);
+    dpr = 1;
   }, false);
+  canvas.addEventListener("webglcontextrestored", function () {
+    if (tabt > 2) { opgiv(); return; }
+    try { init(); W = H = 0; forste = true; start(); } catch (err) { opgiv(); }
+  }, false);
+  function opgiv() {
+    if (raf) cancelAnimationFrame(raf);
+    raf = 0;
+    canvas.remove();
+    if (knap.parentNode) knap.parentNode.removeChild(knap);
+    document.documentElement.classList.remove("har-scene");
+  }
 
   /* ---------- Pauseknap (WCAG 2.2.2: bevægelse skal kunne stoppes) ---------- */
 
